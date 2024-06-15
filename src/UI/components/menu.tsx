@@ -1,15 +1,16 @@
-import { faCaretDown, faCaretUp, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faCamera, faCaretDown, faCaretUp, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 import styled from "styled-components";
 import { Btn, Flex } from "../styles";
 import { Store } from "../../store";
 import { MuralList } from "./muralList";
-import { Coordinates } from "../../coordinates";
+import { Coordinates, CordType } from "../../coordinates";
 import { Palette } from "../../palette";
 import { importArtWork } from "../importMural";
 import { Popup } from "./Popup";
 import { Storage } from "../../storage";
+import { takeCanvasShot } from "../../canvashot";
 
 const Container = styled.div`
 
@@ -78,8 +79,31 @@ interface Props {
     onOpacityChange: (n: number) => void;
     onCollapsedChanged: (b: boolean) => void;
 }
+interface State {
+    takingCanvasShot: boolean;
+    canvasShotAvailable: boolean;
+}
 
-export class Menu extends React.Component<Props> {
+export class Menu extends React.Component<Props, State> {
+
+    constructor(props: Props) {
+        super(props);
+        this.state = {
+            takingCanvasShot: false,
+            canvasShotAvailable: true,
+        }
+    }
+
+    componentDidMount(): void {
+        this.props.cords.on(CordType.Url, this.checkIsScreenShotAvailable)
+    }
+    componentWillUnmount(): void {
+        this.props.cords.off(CordType.Url, this.checkIsScreenShotAvailable)
+    }
+    checkIsScreenShotAvailable = () => {
+        this.setState({canvasShotAvailable: this.props.cords.uScale >= 0})
+        console.log(this.props.cords.uScale);
+    }
 
     import = async () => {
         try {
@@ -97,11 +121,20 @@ export class Menu extends React.Component<Props> {
         const percentage = parseInt((event.target as HTMLInputElement).value);
         this.props.onOpacityChange(percentage);
     };
-
+    screenshot = async () => {
+        if (this.props.cords.uScale < 0) {
+            //Popup.alert("Cannot take screenshot at sc")
+            //return;
+        }
+        this.setState({takingCanvasShot: true});
+        await takeCanvasShot(this.props.cords);
+        this.setState({takingCanvasShot: false});
+    };
     render() {
         return <Container>
             <Flex>
-                <Btn onClick={this.import}><FontAwesomeIcon icon={ faUpload } /> Import</Btn>
+            <Btn onClick={this.screenshot} disabled={this.state.takingCanvasShot || !this.state.canvasShotAvailable} title="screenshot"><FontAwesomeIcon icon={ faCamera } /></Btn>
+            <Btn onClick={this.import} title="Import"><FontAwesomeIcon icon={ faUpload } /></Btn>
                 <InputRange type="range" min={0} max={100} value={this.props.opacity} onInput={this.inputElement} />
                 <PercentageDiv>{this.props.opacity}%</PercentageDiv>
                 <Btn onClick={() => this.props.onCollapsedChanged(!this.props.collapsed)}><FontAwesomeIcon icon={ this.props.collapsed ? faCaretDown : faCaretUp } /></Btn>

@@ -354,3 +354,22 @@ export function processNumberEvent(ev: React.ChangeEvent<HTMLInputElement>, cb: 
         cb(parseInt(ev.target.value, 10));
     }
 }
+
+export async function fetchTile(x: number, y: number) {
+    const url = `https://pixelcanvas.io/tile/${toChunkX(x)}/${toChunkX(y)}.png`;
+    const result = await fetch(url);
+    const blob = await result.blob();
+    const src = URL.createObjectURL(blob);
+    const image = new Image();
+    image.src = src;
+    return new Promise<HTMLImageElement>((resolve, reject) => {
+        image.addEventListener("load", () => {
+            URL.revokeObjectURL(src);
+            resolve(image);
+        });
+        image.addEventListener("error", () => {
+            URL.revokeObjectURL(src);
+            reject(new Error("Unable to load image"));
+        });
+    });
+}

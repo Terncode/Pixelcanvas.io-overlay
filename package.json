@@ -1,6 +1,6 @@
 {
   "name": "pixelcanvas-overlay",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Pixel canvas overlay",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "0xa663",
+  "authors": ["0xa663", "Terncode"],
   "license": "MIT",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.5.1",
