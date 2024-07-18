@@ -91,19 +91,18 @@ export class Menu extends React.Component<Props, State> {
         this.state = {
             takingCanvasShot: false,
             canvasShotAvailable: true,
-        }
+        };
     }
 
     componentDidMount(): void {
-        this.props.cords.on(CordType.Url, this.checkIsScreenShotAvailable)
+        this.props.cords.on(CordType.Url, this.checkIsScreenShotAvailable);
     }
     componentWillUnmount(): void {
-        this.props.cords.off(CordType.Url, this.checkIsScreenShotAvailable)
+        this.props.cords.off(CordType.Url, this.checkIsScreenShotAvailable);
     }
     checkIsScreenShotAvailable = () => {
-        this.setState({canvasShotAvailable: this.props.cords.uScale >= 0})
-        console.log(this.props.cords.uScale);
-    }
+        this.setState({canvasShotAvailable: this.props.cords.uScale >= 0});
+    };
 
     import = async () => {
         try {
