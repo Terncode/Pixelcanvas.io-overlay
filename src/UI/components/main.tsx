@@ -9,11 +9,12 @@ import { SelectedMural } from "../../interfaces";
 import { Minimap } from "./minimap";
 import { Overlay } from "./overlay";
 import { debounce } from "lodash";
-import { TCLogo } from "../../constants";
+import { TC_LOGO } from "../../constants";
 import  styled from "styled-components";
 
 const Img = styled.img`
   width: 25px;
+  margin-right: 5px;
   display: inline;
   pointer-events: none;
   touch-action: none;
@@ -98,7 +99,7 @@ export class Main extends React.Component<Props, State> {
     }
     title() {
         return <span title={"Terncode's fork"}>
-        <Img src={TCLogo} alt="TC-Logo"/>
+        <Img src={TC_LOGO} alt="TC-Logo"/>
         <span>Overlay</span>
         </span>;
     }

@@ -37,7 +37,10 @@ async function main(dev) {
 
     const scriptInput = path.join(process.cwd(), "src", "index.ts");
     const scriptOutput = path.join(buildVersionDir, "assets", "scripts",  "content.js");
-    
+
+    const injectScriptInput = path.join(process.cwd(), "src", "inject.ts");
+    const injectScriptOutput = path.join(buildVersionDir, "assets", "scripts",  "inject.js");
+
     deleteFolder(distDir);
     ensureFolder(buildDir);
     ensureFolder(distDir);
@@ -52,6 +55,19 @@ async function main(dev) {
         platform: "browser",
     }
 
+    await esbuild.build({
+        ...common,
+        entryPoints: [injectScriptInput],
+        sourcemap: !dev,
+        define: {
+            DEV: JSON.stringify(dev),
+            ENVIRONMENT: JSON.stringify("user-script")
+        },
+        outfile: injectScriptOutput,
+    });
+
+    const raw = JSON.stringify(fs.readFileSync(injectScriptOutput, "utf-8"));
+    const injectCode = raw.substring(1, raw.length - 1);
     await esbuild.build({
         ...common,
         sourcemap: !dev,
@@ -75,6 +91,9 @@ async function main(dev) {
         outfile: userScriptOutput,
     });
 
+    [scriptOutput, userScriptOutput].forEach(path => {
+        fs.writeFileSync(path, fs.readFileSync(path, "utf-8").replace("/* CROSS_WORLD_INJECT_CODE */", injectCode));
+    });
     const code = fs.readFileSync(userScriptOutput, "utf-8");
     let template = fs.readFileSync(userScriptTemplateLocation, "utf-8");
     const date = new Date();

@@ -6,7 +6,12 @@
         "48": "assets/images/icon_48.png",
         "128": "assets/images/icon_128.png"
     },
-    "web_accessible_resources": [],
+    "web_accessible_resources": [
+        {
+            "resources": ["assets/scripts/inject.js"],
+            "matches": ["<all_urls>"]
+        }
+    ],
     "permissions": [
         "storage"
     ],
