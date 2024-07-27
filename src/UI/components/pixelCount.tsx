@@ -5,11 +5,11 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSquare } from "@fortawesome/free-solid-svg-icons";
 import { formatNumber } from "../../lib/utils";
 
-const CountBox = styled.div`
+const CountBox = styled.div<{width: number}>`
     position: fixed;
     display: flex;
     flex-direction: row;
-    bottom: 107px;
+    bottom: ${props => (props.width > 480 ? 107 : 187)}px;
     right: 16px;
     background-color: rgba(255, 255, 255, 0.75);
     border: 2px solid black;
@@ -34,6 +34,7 @@ interface Props {
 
 interface State {
     count: number;
+    width: number;
 }
 
 export class PixelCount extends React.Component<Props, State> {
@@ -41,7 +42,8 @@ export class PixelCount extends React.Component<Props, State> {
     constructor(props:Props) {
         super(props);
         this.state = {
-            count: 0
+            count: 0,
+            width: window.innerWidth,
         };
     }
     componentDidMount() {
@@ -51,19 +53,24 @@ export class PixelCount extends React.Component<Props, State> {
         }
        });
        this.props.pixelCount.on(this.updateCount);
+       window.addEventListener("resize", this.onResize);
     }
     componentWillUnmount() {
         this.props.pixelCount.on(this.updateCount);
+        window.removeEventListener("resize", this.onResize);
     }
     updateCount = (count: number) => {
         this.setState({count});
+    };
+    onResize = () => {
+        this.setState({ width: window.innerWidth });
     };
 
     render() {
         if (!this.state.count) return null;
 
         return (
-            <CountBox>
+            <CountBox width={this.state.width}>
                 <Count>{formatNumber(this.state.count)}</Count>
                 <Icon><FontAwesomeIcon icon={ faSquare }></FontAwesomeIcon></Icon>
             </CountBox>
