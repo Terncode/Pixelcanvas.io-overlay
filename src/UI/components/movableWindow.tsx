@@ -25,7 +25,7 @@ const DragArea = styled.div`
 
 interface Props {
     children: React.ReactNode;
-    title: string;
+    title: string | React.JSX.Element;
     storage: Storage;
     storageKey: string;
 }

@@ -9,7 +9,15 @@ import { SelectedMural } from "../../interfaces";
 import { Minimap } from "./minimap";
 import { Overlay } from "./overlay";
 import { debounce } from "lodash";
+import { TCLogo } from "../../constants";
+import  styled from "styled-components";
 
+const Img = styled.img`
+  width: 25px;
+  display: inline;
+  pointer-events: none;
+  touch-action: none;
+`;
 
 interface StoreSettings {
     opacity: number;
@@ -88,9 +96,16 @@ export class Main extends React.Component<Props, State> {
         }
         return null;
     }
+    title() {
+        return <span title={"Terncode's fork"}>
+        <Img src={TCLogo} alt="TC-Logo"/>
+        <span>Overlay</span>
+        </span>;
+    }
+
     render() {
         return <>
-            <MovableWindow title="Overlay" storage={this.props.storage} storageKey="main" >
+            <MovableWindow title={this.title()} storage={this.props.storage} storageKey="main"  >
                 <Menu 
                 onOpacityChange={this.opacityChange}
                 cords={this.props.cords}
