@@ -1,8 +1,8 @@
 import React from "react";
-import { OverlayReturn, Store, StoreEvents } from "../../store";
-import { Storage } from "../../storage";
-import { Coordinates } from "../../coordinates";
-import { Palette } from "../../palette";
+import { OverlayReturn, Store, StoreEvents } from "../../lib/store";
+import { Storage } from "../../lib/storage";
+import { Coordinates } from "../../lib/coordinates";
+import { Palette } from "../../lib/palette";
 import { Menu } from "./menu";
 import { MovableWindow } from "./movableWindow";
 import { SelectedMural } from "../../interfaces";

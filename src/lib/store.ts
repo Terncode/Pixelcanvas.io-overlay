@@ -1,4 +1,4 @@
-import { BasicEventEmitter, Listener } from "./EventEmitter";
+import { BasicEventEmitter, Listener } from "./eventEmitter";
 import { LoadUnload, Mural, MuralEx, SelectedMural } from "./interfaces";
 import { Palette } from "./palette";
 

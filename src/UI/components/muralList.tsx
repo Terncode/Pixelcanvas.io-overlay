@@ -1,9 +1,9 @@
 import React from "react";
 import { MuralEx, SelectedMural } from "../../interfaces";
-import { Store, StoreEvents } from "../../store";
+import { Store, StoreEvents } from "../../lib/store";
 import { MuralView } from "./muralView";
 import styled from "styled-components";
-import { Coordinates } from "../../coordinates";
+import { Coordinates } from "../../lib/coordinates";
 
 const ScrollContainer = styled.div`
     overflow: auto;

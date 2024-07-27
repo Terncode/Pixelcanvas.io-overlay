@@ -1,4 +1,4 @@
-import { RGB } from "./interfaces";
+import { RGB } from "../interfaces";
 import { rgbToHex } from "./utils";
 
 export class Palette {

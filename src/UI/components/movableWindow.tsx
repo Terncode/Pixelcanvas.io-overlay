@@ -2,7 +2,7 @@ import React, { createRef } from "react";
 import styled from "styled-components";
 import { Point } from "../../interfaces";
 import { clamp, debounce } from "lodash";
-import { Storage } from "../../storage";
+import { Storage } from "../../lib/storage";
 
 const Movable = styled.div`
     position: fixed;

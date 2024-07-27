@@ -1,15 +1,15 @@
-import { Coordinates, CordType } from "../../coordinates";
+import { Coordinates, CordType } from "../../lib/coordinates";
 import { SelectedMural } from "../../interfaces";
 import React from "react";
 import { Btn, SELECTED_COLOR } from "../styles";
 import { faCrosshairs, faMagnifyingGlassMinus, faMagnifyingGlassPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import styled from "styled-components";
-import { createCanvas, drawPixelsOntoCanvas } from "../../utils";
-import { Palette } from "../../palette";
+import { createCanvas, drawPixelsOntoCanvas } from "../../lib/utils";
+import { Palette } from "../../lib/palette";
 import { clamp} from "lodash";
-import { Store } from "../../store";
-import { Storage } from "../../storage";
+import { Store } from "../../lib/store";
+import { Storage } from "../../lib/storage";
 
 const Flex = styled.div`
     display: flex;

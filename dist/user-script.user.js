@@ -30541,7 +30541,7 @@
     }
   });
 
-  // src/utils.ts
+  // src/lib/utils.ts
   var import_lodash = __toESM(require_lodash());
   var CHUNK_SIZE = 512;
   function pushUnique(items, item) {
@@ -30838,7 +30838,7 @@
     }
   }
   async function fetchTile(x2, y2) {
-    const url = `https://pixelcanvas.io/tile/${toChunkX(x2)}/${toChunkX(y2)}.png`;
+    const url = `/tile/${toChunkX(x2)}/${toChunkX(y2)}.png`;
     const result = await fetch(url);
     const blob = await result.blob();
     const src = URL.createObjectURL(blob);
@@ -30856,7 +30856,7 @@
     });
   }
 
-  // src/EventEmitter.ts
+  // src/lib/eventEmitter.ts
   var BasicEventEmitter = class {
     listeners = /* @__PURE__ */ new Map();
     on(type, listener3) {
@@ -30898,7 +30898,7 @@
     }
   };
 
-  // src/coordinates.ts
+  // src/lib/coordinates.ts
   var Coordinates = class {
     cords;
     emitter = new BasicEventEmitter();
@@ -31058,7 +31058,7 @@
     }
   };
 
-  // src/palette.ts
+  // src/lib/palette.ts
   var Palette = class {
     buttons = [];
     palette = [];
@@ -31103,7 +31103,7 @@
     }
   };
 
-  // src/UI/Fileinput.ts
+  // src/lib/fileinput.ts
   var FileInput = class {
     input = document.createElement("input");
     constructor() {
@@ -31152,7 +31152,7 @@
   // src/UI/components/main.tsx
   var import_react15 = __toESM(require_react());
 
-  // src/store.ts
+  // src/lib/store.ts
   var Store = class {
     constructor(storage, palette) {
       this.storage = storage;
@@ -36341,7 +36341,7 @@
     }
   };
 
-  // src/canvashot.tsx
+  // src/lib/canvashot.tsx
   var import_file_saver2 = __toESM(require_FileSaver_min());
   var import_react9 = __toESM(require_react());
   function getSelectionArea() {
@@ -37212,7 +37212,7 @@
     };
   }
 
-  // src/storage.ts
+  // src/lib/storage.ts
   var Storage = class {
     constructor(chrome2) {
       this.chrome = chrome2;

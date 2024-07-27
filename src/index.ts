@@ -1,10 +1,10 @@
 /// <reference path="patch.d.ts" />
-import { Coordinates } from "./coordinates";
-import { Palette } from "./palette";
+import { Coordinates } from "./lib/coordinates";
+import { Palette } from "./lib/palette";
 import { createUI } from "./UI/ui";
-import { waitForDraw } from "./utils";
-import { Storage } from "./storage";
-import { Store  } from "./store";
+import { waitForDraw } from "./lib/utils";
+import { Storage } from "./lib/storage";
+import { Store  } from "./lib/store";
 
 async function main() {
     const palette = new Palette();

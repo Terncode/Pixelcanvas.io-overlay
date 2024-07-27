@@ -1,13 +1,13 @@
 import { Mural } from "../interfaces";
 import { canvasToImageData, createCanvas, flatQuantizeImageData,
     getExtension, getMuralHeight, getMuralWidth, imageDataToPaletteIndices,
-    imageToCanvas, loadImageSource, readAsDataUrl, readAsString, resize, validateMural } from "../utils";
-import { FileInput } from "./Fileinput";
-import { Palette } from "../palette";
-import { Store } from "../store";
+    imageToCanvas, loadImageSource, readAsDataUrl, readAsString, resize, validateMural } from "../lib/utils";
+import { FileInput } from "../lib/fileinput";
+import { Palette } from "../lib/palette";
+import { Store } from "../lib/store";
 import React from "react";
-import { Coordinates } from "../coordinates";
-import { Storage } from "../storage";
+import { Coordinates } from "../lib/coordinates";
+import { Storage } from "../lib/storage";
 import { Main } from "./components/main";
 import { createRoot } from "react-dom/client";
 

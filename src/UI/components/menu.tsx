@@ -3,14 +3,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 import styled from "styled-components";
 import { Btn, Flex } from "../styles";
-import { Store } from "../../store";
+import { Store } from "../../lib/store";
 import { MuralList } from "./muralList";
-import { Coordinates, CordType } from "../../coordinates";
-import { Palette } from "../../palette";
+import { Coordinates, CordType } from "../../lib/coordinates";
+import { Palette } from "../../lib/palette";
 import { importArtWork } from "../importMural";
 import { Popup } from "./Popup";
-import { Storage } from "../../storage";
-import { takeCanvasShot } from "../../canvashot";
+import { Storage } from "../../lib/storage";
+import { takeCanvasShot } from "../../lib/canvashot";
 
 const Container = styled.div`
 

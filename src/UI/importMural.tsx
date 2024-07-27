@@ -1,16 +1,18 @@
 
 import React from "react";
 import { Mural, RGB } from "../interfaces";
-import { canvasToImageData, get2DArrHeight, get2DArrWidth, getColorScore, getExtension, imageDataToPaletteIndices, imageToCanvas, loadImageSource, processNumberEvent, readAsDataUrl, readAsString, resize, rgb, validateMural } from "../utils";
+import { canvasToImageData, get2DArrHeight, get2DArrWidth, getColorScore, getExtension,
+    imageDataToPaletteIndices, imageToCanvas, loadImageSource, processNumberEvent,
+    readAsDataUrl, readAsString, resize, rgb, validateMural } from "../lib/utils";
 import styled from "styled-components";
 import { Popup } from "./components/Popup";
 import RgbQuant, { DitheringKernel, RGBQuantOptions } from "rgbquant";
 import { Border, Btn, Input } from "./styles";
 import { CanvasToCanvasJSX } from "./components/canvasToCanvasJSX";
-import { Palette } from "../palette";
-import { FileInput } from "./Fileinput";
-import { Store } from "../store";
-import { Coordinates } from "../coordinates";
+import { Palette } from "../lib/palette";
+import { FileInput } from "../lib/fileinput";
+import { Store } from "../lib/store";
+import { Coordinates } from "../lib/coordinates";
 
 export const TEXT_FORMATS = ["muraljson", "json"];
 

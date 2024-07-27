@@ -1,13 +1,13 @@
 import React from "react";
-import { Store } from "../../store";
+import { Store } from "../../lib/store";
 import { Mural, MuralEx } from "../../interfaces";
 import styled from "styled-components";
 import { Border, Btn, Flex, SELECTED_COLOR } from "../styles";
 import { CanvasToCanvasJSX } from "./canvasToCanvasJSX";
-import { formatNumber, getMuralHeight, getMuralWidth } from "../../utils";
+import { formatNumber, getMuralHeight, getMuralWidth } from "../../lib/utils";
 import { IconDefinition, faDownload, faLayerGroup, faLocation, faPenToSquare, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Coordinates } from "../../coordinates";
+import { Coordinates } from "../../lib/coordinates";
 import { TEXT_FORMATS } from "../importMural";
 import saveAs from "file-saver";
 import { Popup } from "./Popup";

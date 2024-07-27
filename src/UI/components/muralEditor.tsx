@@ -1,6 +1,6 @@
 import React from "react";
 import { Border, Btn, Flex, Input } from "../styles";
-import { processNumberEvent } from "../../utils";
+import { processNumberEvent } from "../../lib/utils";
 
 interface Props {
     name: string;

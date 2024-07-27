@@ -1,11 +1,11 @@
 import React from "react";
 import styled from "styled-components";
 import { Mural, MuralEx } from "../../interfaces";
-import { canvasFromMural, get2DArrHeight, get2DArrWidth } from "../../utils";
-import { Coordinates, CordType } from "../../coordinates";
-import { Palette } from "../../palette";
+import { canvasFromMural, get2DArrHeight, get2DArrWidth } from "../../lib/utils";
+import { Coordinates, CordType } from "../../lib/coordinates";
+import { Palette } from "../../lib/palette";
 import { MovableWindow } from "./movableWindow";
-import { Storage } from "../../storage";
+import { Storage } from "../../lib/storage";
 import { MuralEditor } from "./muralEditor";
 
 const Canvas = styled.canvas`

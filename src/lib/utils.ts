@@ -1,5 +1,5 @@
 import { clone, isInteger } from "lodash";
-import { Mural, RGB } from "./interfaces";
+import { Mural, RGB } from "../interfaces";
 
 export const CHUNK_SIZE = 512;
 
@@ -356,7 +356,7 @@ export function processNumberEvent(ev: React.ChangeEvent<HTMLInputElement>, cb: 
 }
 
 export async function fetchTile(x: number, y: number) {
-    const url = `https://pixelcanvas.io/tile/${toChunkX(x)}/${toChunkX(y)}.png`;
+    const url = `/tile/${toChunkX(x)}/${toChunkX(y)}.png`;
     const result = await fetch(url);
     const blob = await result.blob();
     const src = URL.createObjectURL(blob);

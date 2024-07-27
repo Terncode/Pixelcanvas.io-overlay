@@ -1,4 +1,4 @@
-import { Listener, BasicEventEmitter } from "./EventEmitter";
+import { Listener, BasicEventEmitter } from "./eventEmitter";
 import { CHUNK_SIZE, waitForDraw } from "./utils";
 
 export enum CordType {
