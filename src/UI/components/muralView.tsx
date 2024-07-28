@@ -1,16 +1,17 @@
 import React from "react";
 import { Store } from "../../lib/store";
-import { Mural, MuralEx } from "../../interfaces";
+import { Mural, MuralEx, MuralStatus } from "../../interfaces";
 import styled from "styled-components";
 import { Border, Btn, Flex, SELECTED_COLOR } from "../styles";
 import { CanvasToCanvasJSX } from "./canvasToCanvasJSX";
-import { formatNumber, getMuralHeight, getMuralWidth } from "../../lib/utils";
-import { IconDefinition, faDownload, faLayerGroup, faLocation, faPenToSquare, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { formatNumber, getMuralHeight, getMuralWidth, getPixelStatusMural } from "../../lib/utils";
+import { IconDefinition, faDownload, faLayerGroup, faLocation, faPenToSquare, faRefresh, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Coordinates } from "../../lib/coordinates";
 import { TEXT_FORMATS } from "../importMural";
 import saveAs from "file-saver";
 import { Popup } from "./Popup";
+import { Palette } from "../../lib/palette";
 
 const Margin = styled.div`
     margin: 2px;
@@ -27,11 +28,46 @@ const Line = styled.div`
     display: flex;
     flex-direction: row;
 `;
+const Strong = styled.strong`
+    margin-right: 2px;
+`;
+
+export const BtnSmall = styled.button`
+    border: 1px solid white;
+    font-size: 50pt;
+    width: 22px;
+    background-color: rgba(255, 255, 255, 0.75);
+    color: rgb(10, 10, 10);
+    border-radius: 12px;
+    border: 2px solid black;
+
+
+    margin: 1px;
+    margin-left: 3px;
+    display: flex;
+    padding: 3px;
+    outline: none !important;
+    text-decoration: none;
+
+    &:hover {
+        background-color: rgba(158, 158, 158, 0.75);
+    }
+    &:visited {
+        text-decoration: none;
+    }
+    &:disabled {
+        color: gray;
+        border-color: gray;
+        cursor: not-allowed;
+    }
+    transition: background-color 250ms;
+`;
 
 interface Props {
     mural: MuralEx;
     selected: boolean;
     store: Store;
+    palette: Palette;
     cords: Coordinates;
 }
 
@@ -39,6 +75,7 @@ interface State {
     width: number;
     height: number;
     overlay: boolean;
+    progress?: MuralStatus | (() => void /* loading */);
 }
 
 
@@ -59,6 +96,10 @@ export class MuralView extends React.Component<Props, State> {
     componentDidUpdate ( prevProps: Readonly<Props> ) {
         if (this.props.mural.ref !== prevProps.mural.ref) {
             this.updateSize();
+            if (typeof this.state.progress === "function") {
+                typeof this.state.progress();
+                this.setState({progress: undefined});
+            }
         }
     }
 
@@ -83,8 +124,8 @@ export class MuralView extends React.Component<Props, State> {
             height, width
         });
     };
-    renderInfoLine(title: string, description: string) {
-        return <Line><H5>{title}:</H5><span> {description}</span></Line>;
+    renderInfoLine(title: string, description: string | React.JSX.Element) {
+        return <Line><H5>{title}:</H5><span>{description}</span></Line>;
     }
 
     btn(context: string, icon: IconDefinition, onClick: () => void, selected?: boolean) {
@@ -196,16 +237,42 @@ export class MuralView extends React.Component<Props, State> {
         }
     };
 
+    updateProgress = async () => {
+        let canceled = false;
+        const cancelFn = () => {
+            canceled = true;
+        };
+        this.setState({progress: cancelFn});
+        const data = await getPixelStatusMural(this.props.mural, this.props.palette.palette);
+        if (!canceled) {
+            this.setState({progress: data});
+        }
+    };
+
+    renderProgress() {
+        if (typeof this.state.progress === "function") {
+            return "Loading...";
+        }
+        const ref = <BtnSmall onClick={this.updateProgress}><FontAwesomeIcon icon={faRefresh} /></BtnSmall>;
+        if (this.state.progress && this.state.progress.total !== 0) {
+            const { total, bad, good } = this.state.progress;
+            return <Flex><Strong>{Math.floor(good / total * 100)}%</Strong> {bad > 0 ? formatNumber(bad) : ""}{ref}</Flex>;
+        } else {
+            return ref;
+        }
+    }
+
     render() {
         return <Border onClick={this.onLoad} style={{ border: this.props.selected ? "3px solid black" : "3px dotted black", cursor: "pointer" }} onMouseEnter={this.onEnter} onMouseLeave={this.onLeave}>
             <Flex>
                 <CanvasToCanvasJSX canvas={this.props.mural.ref} height={this.state.height} width={this.state.width}/>
                 <Margin style={{flex: "1"}}>
                     {this.renderInfoLine("Name", this.props.mural.name)}
-                    {this.renderInfoLine("PixelCount", formatNumber(this.props.mural.pixelCount))}
-                    {this.renderInfoLine("x", this.props.mural.x.toString() )}
-                    {this.renderInfoLine("y", this.props.mural.y.toString() )}
-                    {this.renderInfoLine("size", `${getMuralWidth(this.props.mural)}x${getMuralHeight(this.props.mural)}`)}
+                    {this.renderInfoLine("Pixel count", formatNumber(this.props.mural.pixelCount))}
+                    {this.renderInfoLine("X", this.props.mural.x.toString() )}
+                    {this.renderInfoLine("Y", this.props.mural.y.toString() )}
+                    {this.renderInfoLine("Size", `${getMuralWidth(this.props.mural)}x${getMuralHeight(this.props.mural)}`)}
+                    {this.renderInfoLine("Progress", this.renderProgress())}
                 </Margin>
             </Flex>
             <Flex>

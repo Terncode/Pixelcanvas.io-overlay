@@ -11,6 +11,12 @@ export interface Mural {
     y: number;
 }
 
+export interface MuralStatus {
+    total: number;
+    good: number;
+    bad: number;
+}
+
 export interface LoadUnload {
     load: () => Promise<void> | void;
     unload: () => Promise<void> | void;

@@ -1,7 +1,6 @@
 import { BasicEventEmitter, Listener } from "./eventEmitter";
-import { LoadUnload, Mural, MuralEx, SelectedMural } from "./interfaces";
+import { LoadUnload, Mural, MuralEx, SelectedMural } from "../interfaces";
 import { Palette } from "./palette";
-
 import { Storage } from "./storage";
 import { canvasFromMural, getMuralHeight, getMuralWidth, pushUnique, removeItem } from "./utils";
 

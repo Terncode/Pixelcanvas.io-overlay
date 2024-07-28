@@ -138,7 +138,7 @@ export class Menu extends React.Component<Props, State> {
                 <PercentageDiv>{this.props.opacity}%</PercentageDiv>
                 <Btn onClick={() => this.props.onCollapsedChanged(!this.props.collapsed)}><FontAwesomeIcon icon={ this.props.collapsed ? faCaretDown : faCaretUp } /></Btn>
             </Flex>
-            {this.props.collapsed ? null : <MuralList store={this.props.store} cords={this.props.cords}/> }
+            {this.props.collapsed ? null : <MuralList store={this.props.store} palette={this.props.palette} cords={this.props.cords}/> }
         </Container>;
     }
 

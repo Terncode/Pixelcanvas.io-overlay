@@ -141,37 +141,42 @@ export function getSelectionArea() {
     });
 }
 
+export async function fetchCombineTiledImage(x: number, y: number, width: number, height: number, uScale = 0) {
+    const canvas = createCanvas();
+    canvas.width = width / Math.pow(2, uScale);
+    canvas.height = height / Math.pow(2, uScale);
+    const ctx = canvas.getContext("2d")!;
+    const offX = Math.floor((x % (CHUNK_SIZE)));
+    const offY = Math.floor((y % (CHUNK_SIZE)));
+    const awaiters: Promise<void>[] = [];
+    for (let xx = 0; xx < width + CHUNK_SIZE; xx += CHUNK_SIZE) {
+        for (let yy = 0; yy < height + CHUNK_SIZE; yy += CHUNK_SIZE) {
+            const promise = new Promise<void>((resolve, reject) => {
+                fetchTile(x + xx, y + yy).then(image => {
+                    const offXX = x > 0 ? -offX : (-(CHUNK_SIZE + (offX)) % CHUNK_SIZE);
+                    const offYY = y > 0 ? -offY : (-(CHUNK_SIZE + (offY)) % CHUNK_SIZE);
+                    ctx.drawImage(image, xx + offXX, yy + offYY);
+                    resolve();
+                }).catch(reject);
+            });
+            awaiters.push(promise);
+        }
+    }
+    await Promise.all(awaiters);
+    return canvas;
+}
+
 export async function takeCanvasShot(coordinates: Coordinates) {
     const rect = await getSelectionArea();
-    const s = coordinates.uScale;
     const cords = coordinates.screenToGrid(rect.x, rect.y);
     const cordsEnd = coordinates.screenToGrid(rect.x + rect.width, rect.height + rect.y);
     if (!cords || !cordsEnd) {
         return; // unavailable
     }
-    const canvas = createCanvas();
-    canvas.width = rect.width / Math.pow(2, s);
-    canvas.height = rect.height / Math.pow(2, s);
-    const ctx = canvas.getContext("2d")!;
-    const offX = Math.floor((cords.x % (CHUNK_SIZE)));
-    const offY = Math.floor((cords.y % (CHUNK_SIZE)));
-    const awaiters: Promise<void>[] = [];
-    for (let x = 0; x < rect.width + CHUNK_SIZE; x += CHUNK_SIZE) {
-        for (let y = 0; y < rect.height + CHUNK_SIZE; y += CHUNK_SIZE) {
-            const promise = new Promise<void>((resolve, reject) => {
-                fetchTile(cords.x + x, cords.y + y).then(image => {
-                    const offXX = cords.x > 0 ? -offX : (-(CHUNK_SIZE + (offX)) % CHUNK_SIZE);
-                    const offYY = cords.y > 0 ? -offY : (-(CHUNK_SIZE + (offY)) % CHUNK_SIZE);
-                    ctx.drawImage(image, x + offXX, y + offYY);
-                    resolve();
-                }).catch(reject);
 
-            });
-            awaiters.push(promise);
-        }
-    }
     try {
-        await Promise.all(awaiters);
+        const canvas = await fetchCombineTiledImage(cords.x, cords.y, rect.height, rect.width, coordinates.uScale);
+        
         const url = canvas.toDataURL();
         Popup.custom(<img style={{border: "1px solid black"}} src={url} />, [{
             content: "Download",

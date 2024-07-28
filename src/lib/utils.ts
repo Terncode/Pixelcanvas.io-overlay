@@ -1,5 +1,6 @@
 import { clone, isInteger } from "lodash";
-import { Mural, RGB } from "../interfaces";
+import { Mural, MuralStatus, RGB } from "../interfaces";
+import { fetchCombineTiledImage } from "./canvashot";
 
 export const CHUNK_SIZE = 512;
 
@@ -220,6 +221,36 @@ export function flatQuantizeImageData(imageData: ImageData, palette: RGB[]) {
         imageData.data[i + 2] = color.b;
         imageData.data[i + 3] = a;
     }
+}
+
+export async function getPixelStatusMural(mural: Mural, palette: RGB[]): Promise<MuralStatus> {
+    const width = getMuralWidth(mural);
+    const height = getMuralHeight(mural);
+    const tile = await fetchCombineTiledImage(mural.x, mural.y, width, height);
+    const imageData = tile.getContext("2d")?.getImageData(0, 0, width, height);
+    const buffer = mural.pixels.flat();
+    let total = 0;
+    let bad = 0;
+    let good = 0;
+    if (imageData) {
+        for (let i = 0, j = 0; i < imageData.data.length; i += 4, j++) {
+            if (buffer[j] >= 0) {
+                const r = imageData.data[i + 0];
+                const g = imageData.data[i + 1];
+                const b = imageData.data[i + 2];
+
+                const obj = rgb(r, g, b);
+                total++;
+                if (findClosestIndexColor(obj, palette) === buffer[j]) {
+                    good++;
+                } else {
+                    bad++;
+                }
+            
+            }
+        }
+    }
+    return { total, good, bad };
 }
 
 export function imageDataToPaletteIndices(imageData: ImageData, palette: RGB[]) {
