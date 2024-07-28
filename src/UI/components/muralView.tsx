@@ -34,7 +34,7 @@ const Strong = styled.strong`
 
 export const BtnSmall = styled.button`
     border: 1px solid white;
-    font-size: 50pt;
+    font-size: 10pt;
     width: 22px;
     background-color: rgba(255, 255, 255, 0.75);
     color: rgb(10, 10, 10);
