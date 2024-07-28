@@ -132,7 +132,7 @@ export class Menu extends React.Component<Props, State> {
     render() {
         return <Container>
             <Flex>
-            <Btn onClick={this.screenshot} disabled={this.state.takingCanvasShot || !this.state.canvasShotAvailable} title="screenshot"><FontAwesomeIcon icon={ faCamera } /></Btn>
+            <Btn onClick={this.screenshot} disabled={this.state.takingCanvasShot || !this.state.canvasShotAvailable} title="Screenshot"><FontAwesomeIcon icon={ faCamera } /></Btn>
             <Btn onClick={this.import} title="Import"><FontAwesomeIcon icon={ faUpload } /></Btn>
                 <InputRange type="range" min={0} max={100} value={this.props.opacity} onInput={this.inputElement} />
                 <PercentageDiv>{this.props.opacity}%</PercentageDiv>
