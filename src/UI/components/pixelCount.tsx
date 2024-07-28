@@ -8,6 +8,7 @@ import { formatNumber } from "../../lib/utils";
 const CountBox = styled.div<{width: number}>`
     position: fixed;
     display: flex;
+    z-index: 10;
     flex-direction: row;
     bottom: ${props => (props.width > 480 ? 107 : 187)}px;
     right: 16px;
