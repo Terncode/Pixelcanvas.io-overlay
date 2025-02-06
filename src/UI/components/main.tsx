@@ -64,7 +64,7 @@ export class Main extends React.Component<Props, State> {
     }
     componentWillUnmount() {
         this.destroyed = true;
-        this.actualSave({collapsed: this.state.collapsed, opacity: this.state .opacity});
+        this.actualSave({collapsed: this.state.collapsed, opacity: this.state.opacity});
     }
     actualSave(settings: StoreSettings) {
         return this.props.storage.setItem(this.STORAGE_KEY, settings);
@@ -122,9 +122,28 @@ export class Main extends React.Component<Props, State> {
             />
             </MovableWindow>
             {this.renderMap()}
-            {this.state.overlays.map((o, i) => <Overlay key={i} storage={this.props.storage} opacity={this.state.opacity} cords={this.props.cords} palette={this.props.palette} mural={this.props.store.murals[o]}/> )}
-            {this.props.store.murals[this.state.phantomOverlay] ? <Overlay storage={this.props.storage} opacity={50} cords={this.props.cords} palette={this.props.palette} mural={this.props.store.murals[this.state.phantomOverlay]}/> : null }
-            {this.state.overlayModify ? <Overlay muralObj={this.state.overlayModify.muralObj} opacity={this.state.opacity} storage={this.props.storage} cords={this.props.cords} palette={this.props.palette} mural={this.props.store.overlayModify!.pixels} onChange={(name, x, y, confirm) => {
+            {this.state.overlays.map((o, i) => <Overlay 
+                key={i} storage={this.props.storage} 
+                opacity={this.state.opacity}
+                cords={this.props.cords}
+                palette={this.props.palette}
+                mural={this.props.store.murals[o]}
+            /> )}
+            {this.props.store.murals[this.state.phantomOverlay] ? <Overlay 
+                storage={this.props.storage}
+                opacity={50}
+                cords={this.props.cords}
+                palette={this.props.palette}
+                mural={this.props.store.murals[this.state.phantomOverlay]}
+                /> : null }
+            {this.state.overlayModify ? <Overlay 
+                muralObj={this.state.overlayModify.muralObj}
+                opacity={this.state.opacity}
+                storage={this.props.storage}
+                cords={this.props.cords}
+                palette={this.props.palette}
+                mural={this.props.store.overlayModify!.pixels}
+            onChange={(name, x, y, confirm) => {
                 this.state.overlayModify!.cb(name, x, y, confirm);
             }} /> : null}
         </>;

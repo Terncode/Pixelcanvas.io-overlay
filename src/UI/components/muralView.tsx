@@ -5,7 +5,9 @@ import styled from "styled-components";
 import { Border, Btn, Flex, SELECTED_COLOR } from "../styles";
 import { CanvasToCanvasJSX } from "./canvasToCanvasJSX";
 import { formatNumber, getMuralHeight, getMuralWidth, getPixelStatusMural } from "../../lib/utils";
-import { IconDefinition, faDownload, faLayerGroup, faLocation, faPenToSquare, faRefresh, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { 
+    IconDefinition, faDownload, faLayerGroup, faLocation, faPenToSquare, faRefresh, faTrash 
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Coordinates } from "../../lib/coordinates";
 import { TEXT_FORMATS } from "../importMural";
@@ -129,7 +131,8 @@ export class MuralView extends React.Component<Props, State> {
     }
 
     btn(context: string, icon: IconDefinition, onClick: () => void, selected?: boolean) {
-        return <Btn style={{ borderColor: selected ? SELECTED_COLOR : "" }} onClick={() => onClick()}>{context} <FontAwesomeIcon icon={icon} /> </Btn>;
+        return <Btn style={{ borderColor: selected ? SELECTED_COLOR : "" }}
+            onClick={() => onClick()}>{context} <FontAwesomeIcon icon={icon} /> </Btn>;
     }
     get s() {
         return this.props.store;
@@ -263,7 +266,11 @@ export class MuralView extends React.Component<Props, State> {
     }
 
     render() {
-        return <Border onClick={this.onLoad} style={{ border: this.props.selected ? "3px solid black" : "3px dotted black", cursor: "pointer" }} onMouseEnter={this.onEnter} onMouseLeave={this.onLeave}>
+        return <Border onClick={this.onLoad} 
+            style={{ 
+                border: this.props.selected ? "3px solid black" : "3px dotted black", 
+                cursor: "pointer" }}
+            onMouseEnter={this.onEnter} onMouseLeave={this.onLeave}>
             <Flex>
                 <CanvasToCanvasJSX canvas={this.props.mural.ref} height={this.state.height} width={this.state.width}/>
                 <Margin style={{flex: "1"}}>

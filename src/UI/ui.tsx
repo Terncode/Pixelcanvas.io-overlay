@@ -8,7 +8,9 @@ import { createRoot } from "react-dom/client";
 import { PixelPlaced } from "../lib/pixelPlaced";
 import { PixelCount } from "./components/pixelCount";
 
-export function createUI(store: Store, storage: Storage, cords: Coordinates, palette: Palette, pixels: PixelPlaced) {
+export function createUI(
+    store: Store, storage: Storage, cords: Coordinates, palette: Palette, pixels: PixelPlaced
+) {
     const unmounts = [
         appendWindow(<PixelCount pixelCount={pixels} />),
         appendWindow(<Main cords={cords} store={store} storage={storage} palette={palette}/>),

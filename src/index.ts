@@ -19,8 +19,14 @@ async function main() {
 
     createUI(store,storage, coordinates, palette, pixelPlaced);
 
-    console.log("%cOverlay by 0xa663", "color: red; font-size: 15px; font-weight: bold; text-shadow: 2px 2px 4px #000000;");
-    console.log("%cTerncode's fork", `color: #4a94cc; font-size: 10px; font-weight: bold; text-shadow: 1px 1px 0px #000000, -1px 1px 0px #000000, 1px -1px 0px #000000, -1px -1px 0px #000000;`);
+    console.log(
+        "%cOverlay by 0xa663", 
+        "color: red; font-size: 15px; font-weight: bold; text-shadow: 2px 2px 4px #000000;"
+    );
+    console.log(
+        "%cTerncode's fork",
+        `color: #4a94cc; font-size: 10px; font-weight: bold; text-shadow: 1px 1px 0px #000000, -1px 1px 0px #000000, 1px -1px 0px #000000, -1px -1px 0px #000000;`
+    );
 }
 
 if (document.readyState === "complete") {

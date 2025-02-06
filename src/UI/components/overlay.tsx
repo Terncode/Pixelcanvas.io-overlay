@@ -146,7 +146,8 @@ export class Overlay extends React.Component<Props, State> {
     renderModifyWindow() {
         if (this.props.onChange) {
             const copy = {...this.state};
-            return <MovableWindow storage={this.props.storage} storageKey="overlay-set" title="Position editor">
+            return <MovableWindow storage={this.props.storage} 
+                storageKey="overlay-set" title="Position editor">
                 <MuralEditor 
                     name={this.state.name}
                     x={this.state.x}

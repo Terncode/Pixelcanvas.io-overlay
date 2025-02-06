@@ -63,7 +63,9 @@ export class MuralList extends React.Component<Props, State> {
     };
     render() {
         return <ScrollContainer> {this.state.murals.map((m,i) => {
-            return <MuralView key={i} mural={m} cords={this.props.cords} palette={this.props.palette} store={this.props.store} selected={m === this.state.selected?.m} />;
+            return <MuralView key={i} mural={m} cords={this.props.cords}
+            palette={this.props.palette} store={this.props.store}
+            selected={m === this.state.selected?.m} />;
         })}</ScrollContainer>;
     }
 }

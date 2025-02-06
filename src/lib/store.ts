@@ -119,7 +119,9 @@ export class Store implements LoadUnload {
     }
 
     async save() {
-        await this.storage.setItem(this.STORAGE_KEY_MURAL, this._murals.map(m => ({ name: m.name, pixels: m.pixels, x: m.x, y: m.y } as Mural)));
+        await this.storage
+            .setItem(this.STORAGE_KEY_MURAL, this._murals
+                    .map(m => ({ name: m.name, pixels: m.pixels, x: m.x, y: m.y } as Mural)));
         const selected = this._selected?.m ? this._murals.indexOf(this._selected?.m!) : -1;
         await this.storage.setItem(this.STORAGE_KEY_SELECTED, selected);
     }

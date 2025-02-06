@@ -155,7 +155,9 @@ export class MovableWindow extends React.Component<Props, State> {
         }
     }
     onMouseDown = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-        this.setMoving(event.clientX,event.clientY, event.nativeEvent.offsetX, event.nativeEvent.offsetY);
+        this.setMoving(
+            event.clientX,event.clientY, event.nativeEvent.offsetX, event.nativeEvent.offsetY
+        );
         this.setState({moving: true});
     };
     onTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
@@ -173,7 +175,10 @@ export class MovableWindow extends React.Component<Props, State> {
     }
     render() {
         return <Movable ref={this.ref} style={{left: `${this.state.x}px`, top: `${this.state.y}px`}}>
-            <DragArea ref={this.dragRef} style={{cursor: this.state.moving ? "grabbing" : ""}} onMouseDown={this.onMouseDown} onTouchStart={this.onTouchStart} > <h2>{this.props.title}</h2> </DragArea>
+            <DragArea ref={this.dragRef}
+            style={{cursor: this.state.moving ? "grabbing" : ""}}
+            onMouseDown={this.onMouseDown}
+            onTouchStart={this.onTouchStart}> <h2>{this.props.title}</h2> </DragArea>
 
 
             {this.props.children}

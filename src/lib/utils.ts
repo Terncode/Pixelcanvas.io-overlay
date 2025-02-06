@@ -179,8 +179,10 @@ export function validateMural(mural: Mural) {
                     throw new Error(`mural.pixels[${y}] is null`);
                 }
                 for (let x = 0; x < yArray.length; x++) {
-                    if (typeof yArray[x] !== "number") throw new Error(`pixels[${y}][${x}] is not a number`);
-                    if (!isInteger(yArray[x])) throw new Error(`pixels[${y}][${x}] is not am integer`);
+                    if (typeof yArray[x] !== "number")
+                            throw new Error(`pixels[${y}][${x}] is not a number`);
+                    if (!isInteger(yArray[x]))
+                            throw new Error(`pixels[${y}][${x}] is not am integer`);
                     const colorId = yArray[x];
                     if (colorId == null) throw new Error("colorId is null");
                 }
@@ -300,7 +302,9 @@ export function imageToCanvas(image: HTMLImageElement) {
     return canvas;
 }
 
-export function drawPixelsOntoCanvas(canvas: HTMLCanvasElement, pixelsData: number[][], palette: string[], pixelSize = 1) {    
+export function drawPixelsOntoCanvas(
+    canvas: HTMLCanvasElement, pixelsData: number[][], palette: string[], pixelSize = 1
+) {    
     const ctx = canvas.getContext("2d")!;
     if (!ctx) return 0;
     const data = pixelsData;
@@ -374,7 +378,9 @@ export function formatNumber(number: number) {
   return numberFormatter ? numberFormatter.format(number) : number.toString();
 }
 
-export function processNumberEvent(ev: React.ChangeEvent<HTMLInputElement>, cb: (n: number) => void) {
+export function processNumberEvent(
+    ev: React.ChangeEvent<HTMLInputElement>, cb: (n: number) => void
+) {
     ev.preventDefault();
     ev.stopPropagation();
     if(ev.target.value === "") {

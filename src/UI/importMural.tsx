@@ -161,7 +161,9 @@ async function imageToMural(image: HTMLImageElement, palette: Palette) {
 
 
 
-export async function getImageSettingFromUser(image: HTMLImageElement): Promise<ImageToMuralOptions> {
+export async function getImageSettingFromUser(
+    image: HTMLImageElement
+): Promise<ImageToMuralOptions> {
     let width = image.width;
     let height = image.height;
     let useQuantizer: DitherSetting = "show-all";
@@ -307,7 +309,9 @@ export async function getImageSettingFromUser(image: HTMLImageElement): Promise<
 }
 
 
-export async function imageToQuantized(image: HTMLImageElement, options: ImageToMuralOptions, palette: Palette) {
+export async function imageToQuantized(
+    image: HTMLImageElement, options: ImageToMuralOptions, palette: Palette
+) {
     if (!options.noShrinking) {
         image = await resize(image, options.width, options.height);
     }
@@ -347,7 +351,9 @@ export function quantizeAll(canvas: HTMLCanvasElement, palette: Palette) {
 }
 
 
-export function quantizeOne(canvas: HTMLCanvasElement, kernel: DitheringKernelEx, palette: Palette): QuantResult {
+export function quantizeOne(
+    canvas: HTMLCanvasElement, kernel: DitheringKernelEx, palette: Palette
+): QuantResult {
     if (kernel === "Flat") {
         const imageData = canvasToImageData(canvas);
         flatQuantizeImageData(imageData, palette);
@@ -389,7 +395,9 @@ export function ditheringKernelToName(kernel: string) {
     return stringBuilder;
 }
 
-function quantizeImage(canvas: HTMLCanvasElement, rgbQuant: RgbQuant, ditheringKernel: DitheringKernel) {
+function quantizeImage(
+    canvas: HTMLCanvasElement, rgbQuant: RgbQuant, ditheringKernel: DitheringKernel
+) {
     // create canvas;
     const drawCanvas = document.createElement("canvas");
     drawCanvas.width = canvas.width;
@@ -469,7 +477,8 @@ async function importFile() {
         const content = await readAsString(fileData);
         const mural = JSON.parse(content) as Mural;
         if (!mural.name) {
-            mural.name = await Popup.prompt("Missing name for this mural. Please enter it manually", name) || "";
+            mural.name = await Popup
+                .prompt("Missing name for this mural. Please enter it manually", name) || "";
         }
         validateMural(mural);
         return {

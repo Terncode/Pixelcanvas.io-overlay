@@ -2,7 +2,9 @@ import { Coordinates, CordType } from "../../lib/coordinates";
 import { SelectedMural } from "../../interfaces";
 import React from "react";
 import { Btn, SELECTED_COLOR } from "../styles";
-import { faCrosshairs, faMagnifyingGlassMinus, faMagnifyingGlassPlus } from "@fortawesome/free-solid-svg-icons";
+import {
+    faCrosshairs, faMagnifyingGlassMinus, faMagnifyingGlassPlus
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import styled from "styled-components";
 import { createCanvas, drawPixelsOntoCanvas } from "../../lib/utils";
@@ -123,7 +125,10 @@ export class Minimap extends React.Component<Props, Stats> {
 
     onCords = (x: number, y: number) => {
         const store = this.props.store;
-        if (store.selected && store.selected.m.x < x && store.selected.m.y < y && store.selected.w + store.selected.m.x > x && store.selected.h + store.selected.m.y > y) {
+        if (
+            store.selected && store.selected.m.x < x && store.selected.m.y < y &&
+            store.selected.w + store.selected.m.x > x &&
+            store.selected.h + store.selected.m.y > y) {
             const xx = x - store.selected.m.x; 
             const yy = y - store.selected.m.y;
             const colorIndex = store.selected.m.pixels[yy][xx];
@@ -246,11 +251,16 @@ export class Minimap extends React.Component<Props, Stats> {
     render() {
         return <div>
             <Flex>
-                <Btn onClick={this.up}><FontAwesomeIcon icon={ faMagnifyingGlassPlus }></FontAwesomeIcon></Btn>
+                <Btn
+                     onClick={this.up}><FontAwesomeIcon icon={ faMagnifyingGlassPlus } /></Btn>
                 <Scale>{this.state.size}</Scale>
-                <Btn onClick={this.down}><FontAwesomeIcon icon={ faMagnifyingGlassMinus }></FontAwesomeIcon></Btn>
+                <Btn onClick={this.down}><FontAwesomeIcon icon={ faMagnifyingGlassMinus } /></Btn>
                 <span style={{flex: 1}}>
-                <Btn title="Color assistant" style={{ borderColor: this.state.colorAssistant ? SELECTED_COLOR : ""} } onClick={() => this.toggleColorAssistant()}>Assist<FontAwesomeIcon icon={faCrosshairs} /> </Btn>
+                <Btn 
+                    title="Color assistant"
+                    style={{ borderColor: this.state.colorAssistant ? SELECTED_COLOR : ""} }
+                    onClick={() => this.toggleColorAssistant()}>Assist<FontAwesomeIcon 
+                    icon={faCrosshairs} /> </Btn>
                 </span>
                 {this.renderColor()}
             </Flex>
