@@ -175,7 +175,9 @@ export async function takeCanvasShot(coordinates: Coordinates) {
     }
 
     try {
-        const canvas = await fetchCombineTiledImage(cords.x, cords.y, rect.height, rect.width, coordinates.uScale);
+        const canvas = await fetchCombineTiledImage(
+            cords.x, cords.y, rect.width, rect.height, coordinates.uScale
+        );
         
         const url = canvas.toDataURL();
         Popup.custom(<img style={{border: "1px solid black"}} src={url} />, [{
