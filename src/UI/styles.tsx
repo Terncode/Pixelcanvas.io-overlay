@@ -12,8 +12,7 @@ export const FlexC = styled.div`
     flex-direction: column;
 `;
 
-
-export const Btn = styled.button`
+const shardedBtnStyle = `
     border: 1px solid white;
     font-size: 10pt;
 
@@ -47,6 +46,9 @@ export const Btn = styled.button`
     }
     transition: background-color 250ms;
 `;
+
+export const Btn = styled.button`${shardedBtnStyle}`;
+export const A = styled.a`${shardedBtnStyle}`;
 
 export const Theme = styled.div`
     background-color: rgba(255, 255, 255, 0.75);

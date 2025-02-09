@@ -2,14 +2,14 @@ import React from "react";
 import { Store } from "../../lib/store";
 import { Mural, MuralEx, MuralStatus } from "../../interfaces";
 import styled from "styled-components";
-import { Border, Btn, Flex, SELECTED_COLOR } from "../styles";
+import { A, Border, Btn, Flex, SELECTED_COLOR } from "../styles";
 import { CanvasToCanvasJSX } from "./canvasToCanvasJSX";
 import { formatNumber, getMuralHeight, getMuralWidth, getPixelStatusMural } from "../../lib/utils";
 import { 
     IconDefinition, faDownload, faLayerGroup, faLocation, faPenToSquare, faRefresh, faTrash 
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Coordinates } from "../../lib/coordinates";
+import { Coordinates, CordType } from "../../lib/coordinates";
 import { TEXT_FORMATS } from "../importMural";
 import saveAs from "file-saver";
 import { Popup } from "./Popup";
@@ -78,6 +78,7 @@ interface State {
     height: number;
     overlay: boolean;
     progress?: MuralStatus | (() => void /* loading */);
+    link: string;
 }
 
 
@@ -89,21 +90,30 @@ export class MuralView extends React.Component<Props, State> {
             height: this.MAX_SIZE,
             width: this.MAX_SIZE,
             overlay: false,
+            link: ""
         };
     }
 
     componentDidMount () {
         this.updateSize();
+        this.props.cords.on(CordType.Url, this.onCordUpdate);
     }
-    componentDidUpdate ( prevProps: Readonly<Props> ) {
+    componentWillUnmount () {
+        this.props.cords.off(CordType.Url, this.onCordUpdate); 
+    }
+    componentDidUpdate(prevProps: Readonly<Props> ) {
         if (this.props.mural.ref !== prevProps.mural.ref) {
             this.updateSize();
             if (typeof this.state.progress === "function") {
                 typeof this.state.progress();
-                this.setState({progress: undefined});
+                this.setState({progress: undefined, link: this.link});
             }
         }
     }
+
+    onCordUpdate = () => {
+        this.setState({ link: this.link });
+    };
 
     updateSize = () => {   
         const w = this.props.mural.ref.width;
@@ -223,13 +233,17 @@ export class MuralView extends React.Component<Props, State> {
         this.props.store.removePhantomOverlay();
     };
 
-    onGoto = () => {
+    get link() {
         const weight = getMuralWidth(this.props.mural);
         const height = getMuralHeight(this.props.mural);
         const x = this.props.mural.x + Math.round(weight / 2);
         const y = this.props.mural.y + Math.round(height / 2);
-        const url = `${origin}/@${x},${y},${this.props.cords.uScale}`;
-        location.href = url;
+        const o = origin === "null" ? `${location.href}` : `${origin}/`;
+        return `${o}@${x},${y},${this.props.cords.uScale}`;
+    }
+
+    onGoto = () => {
+        location.href = this.link;
     };
 
     onPreview = () => {
@@ -287,7 +301,7 @@ export class MuralView extends React.Component<Props, State> {
                 {this.btn("Modify", faPenToSquare, this.onModify)}
                 {this.btn("Export", faDownload, this.onExport)}
                 {this.btn("Delete", faTrash, this.onDelete)}
-                {this.btn("Goto", faLocation, this.onGoto)}
+                <A href={this.link}>Goto <FontAwesomeIcon icon={faLocation}/></A>
             </Flex>
         </Border>;
     }
