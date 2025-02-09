@@ -3,6 +3,7 @@ import React from "react";
 import { Mural, RGB } from "../interfaces";
 import { canvasToImageData, get2DArrHeight, get2DArrWidth, getColorScore, getExtension,
     imageDataToPaletteIndices, imageToCanvas, loadImageSource, processNumberEvent,
+    readAsArrayBuffer,
     readAsDataUrl, readAsString, resize, rgb, validateMural } from "../lib/utils";
 import styled from "styled-components";
 import { Popup } from "./components/Popup";
@@ -13,8 +14,14 @@ import { Palette } from "../lib/palette";
 import { FileInput } from "../lib/fileinput";
 import { Store } from "../lib/store";
 import { Coordinates } from "../lib/coordinates";
+import { deserializeMural } from "./serializer";
 
 export const TEXT_FORMATS = ["muraljson", "json"];
+export const BIN_FORMATS = ["pcm", "bin"];
+
+// TODO: Add bundle
+export const BIN_BUNDLE_FORMATS = ["pcmb"];
+export const ZIP_FORMATS = ["zip"];
 
 
 enum RetrieveType {
@@ -465,21 +472,30 @@ export function imageDataToCanvas(imageData: ImageData) {
 
 async function importFile() {
     const fileInput = new FileInput();
-    fileInput.setAcceptType(["png", "jpg", "jpeg", ...TEXT_FORMATS]);
+    fileInput.setAcceptType(["png", "jpg", "jpeg", ...TEXT_FORMATS, ...BIN_FORMATS]);
     const files = await fileInput.show();
     const fileData = files[0];
     if (!fileData) {
         throw new Error("Empty file");
     }
     const ex = getExtension(fileData.name);
+    const etn = ex.ex.toLowerCase();
     const name = ex.text;
-    if (TEXT_FORMATS.includes(ex.ex)) {
+    if (TEXT_FORMATS.includes(etn)) {
         const content = await readAsString(fileData);
         const mural = JSON.parse(content) as Mural;
         if (!mural.name) {
             mural.name = await Popup
                 .prompt("Missing name for this mural. Please enter it manually", name) || "";
         }
+        validateMural(mural);
+        return {
+            type: "mural",
+            data: mural,
+        };
+    } else if (BIN_FORMATS.includes(etn)) {
+        const buffer = await readAsArrayBuffer(fileData);
+        const mural = deserializeMural(buffer);
         validateMural(mural);
         return {
             type: "mural",

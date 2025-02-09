@@ -91,6 +91,20 @@ export function readAsDataUrl(blob: Blob) {
     });
 }
 
+export function readAsArrayBuffer(blob: Blob) {
+    return new Promise<ArrayBuffer >((resolve, reject) => {
+        const reader = new FileReader();
+        reader.addEventListener("load", () => {
+            resolve(reader.result as ArrayBuffer );
+        });
+        reader.addEventListener("error", err => {
+            reject(err);
+        });
+        reader.readAsArrayBuffer(blob);
+    });
+}
+
+
 export function loadImageSource(name: string, data: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
         const image = new Image();

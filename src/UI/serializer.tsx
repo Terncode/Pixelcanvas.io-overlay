@@ -1,5 +1,4 @@
 import { Mural } from "../interfaces";
-import { waitForDraw } from "../lib/utils";
 
 const MAGIC_REPEATING = 200;
 const TRANSPARENT = 201;
@@ -44,10 +43,9 @@ export function decompressRepeatingArray(buffer: ArrayLike<number>) {
     return output;
 }
 
-export async function serializeMural(mural: Mural) {
+export function serializeMural(mural: Mural) {
     const encoder = new TextEncoder();
     const nameBinary = encoder.encode(mural.name);
-    await waitForDraw();
     const array: number[] = [];
     for (let i = 0; i < mural.pixels.length; i++) {
         for (let j = 0; j < mural.pixels[i].length; j++) {
@@ -80,7 +78,7 @@ export async function serializeMural(mural: Mural) {
     return buffer;
 }
 
-export async function deserializeMural(buffer: ArrayBuffer): Promise<Mural> {
+export function deserializeMural(buffer: ArrayBuffer): Mural {
     const view = new DataView(buffer);
     const version = view.getUint8(0);
     if (version !== VERSION) {
@@ -95,14 +93,12 @@ export async function deserializeMural(buffer: ArrayBuffer): Promise<Mural> {
     const decoder = new TextDecoder();
     const name = decoder.decode(nameBytes);
     const pixelBuffer = new Uint8Array(buffer, 12 + nameLength);
-    await waitForDraw();
     const pixelArray: number[] = decompressRepeatingArray(pixelBuffer);
 
     const pixels: number[][] = [];
 
     leg:
     for (;;) {
-        await waitForDraw();
         if (!pixelArray.length) {
             break;
         }

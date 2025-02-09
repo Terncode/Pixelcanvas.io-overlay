@@ -10,10 +10,11 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Coordinates, CordType } from "../../lib/coordinates";
-import { TEXT_FORMATS } from "../importMural";
+import { BIN_FORMATS } from "../importMural";
 import saveAs from "file-saver";
 import { Popup } from "./Popup";
 import { Palette } from "../../lib/palette";
+import { serializeMural } from "../serializer";
 
 const Margin = styled.div`
     margin: 2px;
@@ -218,8 +219,14 @@ export class MuralView extends React.Component<Props, State> {
             y: this.props.mural.y,
             pixels: this.props.mural.pixels,
         };
-        const blob = new Blob([JSON.stringify(rawMural)], { type: "application/json;charset=utf-8" });
-        saveAs(blob, `${rawMural.name}.${TEXT_FORMATS[0]}`);
+        const buffer = serializeMural(rawMural);
+        const blob = new Blob([buffer], { type: "octet/stream" });
+
+        const saveName = rawMural.name
+            .replace(/ /, "_")
+            .replace(/[^a-zA-Z0-9-_]/g, "");
+
+        saveAs(blob, `${saveName}.${BIN_FORMATS[0]}`);
     };
     onDelete = async () => {
         if (await Popup.confirm(`Are you sure you want to remove "${this.props.mural.name}"`)) {
