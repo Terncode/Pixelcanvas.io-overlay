@@ -1,5 +1,4 @@
 import { Coordinates, CordType } from "../../lib/coordinates";
-import { SelectedMural } from "../../interfaces";
 import React from "react";
 import { Btn, SELECTED_COLOR } from "../styles";
 import {
@@ -12,6 +11,7 @@ import { Palette } from "../../lib/palette";
 import { clamp} from "lodash";
 import { Store } from "../../lib/store";
 import { Storage } from "../../lib/storage";
+import { MuralEx } from "../../interfaces";
 
 const Flex = styled.div`
     display: flex;
@@ -40,7 +40,7 @@ const Canvas = styled.canvas`
 `;
 
 interface Props {
-    selected: SelectedMural;
+    selected: MuralEx;
     cords: Coordinates;
     store: Store;
     storage: Storage;
@@ -60,7 +60,7 @@ interface StorageSettings {
 
 export class Minimap extends React.Component<Props, Stats> {
     private ref = React.createRef<HTMLCanvasElement>();
-    private cache = new Map<number, HTMLCanvasElement>();
+    private cache = document.createElement("canvas");
     private transparentGrid = ["#c5c5c540", "#8d8d8d40"];
     private highlighColor = "#00000040";
     private lastColor = -1;
@@ -77,8 +77,7 @@ export class Minimap extends React.Component<Props, Stats> {
     }
 
     componentDidUpdate ( prevProps: Readonly<Props>, prevState: Readonly<Stats>): void {
-        if (prevProps.selected.m.ref !== this.props.selected.m.ref) {
-            this.cache.clear();
+        if (prevProps.selected.ref !== this.props.selected.ref) {
             this.draw();
         } else if (prevState.size !== this.state.size) {
             this.draw();
@@ -126,12 +125,12 @@ export class Minimap extends React.Component<Props, Stats> {
     onCords = (x: number, y: number) => {
         const store = this.props.store;
         if (
-            store.selected && store.selected.m.x < x && store.selected.m.y < y &&
-            store.selected.w + store.selected.m.x > x &&
-            store.selected.h + store.selected.m.y > y) {
-            const xx = x - store.selected.m.x; 
-            const yy = y - store.selected.m.y;
-            const colorIndex = store.selected.m.pixels[yy][xx];
+            store.selected && store.selected.mural.x < x && store.selected.mural.y < y &&
+            store.selected.mural.w + store.selected.mural.x > x &&
+            store.selected.mural.h + store.selected.mural.y > y) {
+            const xx = x - store.selected.mural.x; 
+            const yy = y - store.selected.mural.y;
+            const colorIndex = store.selected.mural.getPixel(xx, yy);
             if (this.lastColor !== colorIndex) {
                 this.lastColor = colorIndex;
                 this.click(colorIndex);
@@ -153,44 +152,19 @@ export class Minimap extends React.Component<Props, Stats> {
     }
 
     update = () => {
-        const m = this.props.selected.m;
+        const m = this.props.selected.mural;
         const xx = this.props.cords.x - m.x; 
         const yy = this.props.cords.y - m.y;
-        
-        if (m.pixels[yy] !== undefined) {
-            if (m.pixels[yy][xx] !== undefined) {
-                const colorIndex = m.pixels[yy]![xx]!;
-                this.setState({
-                    color: colorIndex
-                });
-                this.draw();
-                return;
-            }
-        }
         this.setState({
-            color: -1,
+            color: m.getPixel(xx, yy) || -1,
         });
         this.draw();
     };
-
-    getCachedImage(size: number) {
-        const image = this.cache.get(size);
-        if (image) {
-            return image;
-        }
-
-        const s = this.props.selected;
-        const canvas = createCanvas();
-        drawPixelsOntoCanvas(canvas, s.m.pixels, this.props.palette.hex, size);
-        this.cache.set(size, canvas);
-        return canvas;
-    }
-
     draw = () => {
         const canvas = this.ref.current!;
         const ctx = canvas.getContext("2d")!;
-        const w = canvas.width = 200;
-        const h = canvas.height = 200;
+        const w = this.cache.width = canvas.width = 200;
+        const h = this.cache.height = canvas.height = 200;
         const hh = w / 2;
         const hw = h / 2;
         ctx.clearRect(0, 0, w, h);
@@ -198,12 +172,16 @@ export class Minimap extends React.Component<Props, Stats> {
         this.drawGrid(ctx, s * 4, w, h);
 
         const pixelSize = (1 * s) / 2;
-        const dx = ((this.props.selected.m.x - this.props.cords.x) * s) + Math.ceil(hh - pixelSize);
-        const dy = ((this.props.selected.m.y - this.props.cords.y) * s) + Math.ceil(hw - pixelSize);
-        //const img = this.props.selected.m.ref;
-        const img = this.getCachedImage(s);
+        const dx = ((this.props.selected.mural.x - this.props.cords.x) * s) + Math.ceil(hh - pixelSize);
+        const dy = ((this.props.selected.mural.y - this.props.cords.y) * s) + Math.ceil(hw - pixelSize);
+        const extended = this.props.selected;
 
-        ctx.drawImage(img, dx, dy, img.width, img.height);
+        const cacheCanvas = this.cache;
+        const cacheCtx = cacheCanvas.getContext("2d")!;
+        cacheCtx.imageSmoothingEnabled = false;
+        cacheCtx.drawImage(extended.ref, dx, dy, extended.mural.w * s, extended.mural.h * s);
+        
+        ctx.drawImage(cacheCanvas, 0, 0);
         if (s != 1) {
             ctx.fillStyle = this.highlighColor;
             const halfHO = (h / 2);
@@ -212,7 +190,6 @@ export class Minimap extends React.Component<Props, Stats> {
             ctx.fillRect(0, halfHO + pixelSize, w, halfHO - pixelSize);
             ctx.fillRect(0, halfHO - pixelSize, halfWO - pixelSize, pixelSize * 2);
             ctx.fillRect(halfWO + pixelSize, halfHO - pixelSize, halfWO - pixelSize, pixelSize * 2);
-
         }
     };
 
@@ -232,7 +209,7 @@ export class Minimap extends React.Component<Props, Stats> {
     }
 
     clamp(size: number) {
-        return clamp(size, 1, 32);
+        return clamp(size, 1, 64);
     }
 
     renderColor() {
