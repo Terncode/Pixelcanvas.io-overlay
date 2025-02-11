@@ -1,10 +1,10 @@
 import React from "react";
 import { Store } from "../../lib/store";
-import { Mural, MuralEx, MuralStatus } from "../../interfaces";
+import { MuralEx, MuralOld, MuralStatus } from "../../interfaces";
 import styled from "styled-components";
 import { A, Border, Btn, Flex, SELECTED_COLOR } from "../styles";
 import { CanvasToCanvasJSX } from "./canvasToCanvasJSX";
-import { formatNumber, getMuralHeight, getMuralWidth, getPixelStatusMural } from "../../lib/utils";
+import { convertOldMuralToNewMural, formatNumber, getMuralHeight, getMuralWidth, getPixelStatusMural } from "../../lib/utils";
 import { 
     IconDefinition, faDownload, faLayerGroup, faLocation, faPenToSquare, faRefresh, faTrash 
 } from "@fortawesome/free-solid-svg-icons";
@@ -14,7 +14,7 @@ import { BIN_FORMATS } from "../importMural";
 import saveAs from "file-saver";
 import { Popup } from "./Popup";
 import { Palette } from "../../lib/palette";
-import { serializeMural } from "../serializer";
+import { Mural } from "../../lib/mural";
 
 const Margin = styled.div`
     margin: 2px;
@@ -212,14 +212,15 @@ export class MuralView extends React.Component<Props, State> {
         //     this.props.store.updateMural(this.props.mural);
         // }
     };
-    onExport = () => {
-        const rawMural: Mural = {
+    onExport = async () => {
+        const rawMural: MuralOld = {
             name: this.props.mural.name,
             x: this.props.mural.x,
             y: this.props.mural.y,
             pixels: this.props.mural.pixels,
         };
-        const buffer = serializeMural(rawMural);
+        const mural = convertOldMuralToNewMural(rawMural);
+        const buffer = await mural.getBuffer();
         const blob = new Blob([buffer], { type: "octet/stream" });
 
         const saveName = rawMural.name

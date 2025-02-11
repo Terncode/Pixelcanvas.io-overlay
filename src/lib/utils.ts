@@ -1,6 +1,7 @@
 import { clone, isInteger } from "lodash";
-import { Mural, MuralStatus, RGB } from "../interfaces";
+import { MuralOld, MuralStatus, RGB } from "../interfaces";
 import { fetchCombineTiledImage } from "./canvashot";
+import { Mural } from "./mural";
 
 export const CHUNK_SIZE = 512;
 
@@ -129,11 +130,11 @@ export function get2DArrWidth(arr2D: number[][]) {
     return (arr2D[0] && arr2D[0].length) || 0;
 }
 
-export function getMuralHeight(mural: Mural) {
+export function getMuralHeight(mural: MuralOld) {
     return get2DArrHeight(mural.pixels);
 }
 
-export function getMuralWidth(mural: Mural) {
+export function getMuralWidth(mural: MuralOld) {
     return get2DArrWidth(mural.pixels);
 }
 
@@ -161,7 +162,7 @@ export function canvasToImage(canvas: HTMLCanvasElement, alt?: string) {
     });
 }
 
-export function validateMural(mural: Mural) {
+export function validateMural(mural: MuralOld) {
     if (typeof mural === "object") {
         const muralClone = clone(mural);
         if (Array.isArray(muralClone)) {
@@ -239,7 +240,7 @@ export function flatQuantizeImageData(imageData: ImageData, palette: RGB[]) {
     }
 }
 
-export async function getPixelStatusMural(mural: Mural, palette: RGB[]): Promise<MuralStatus> {
+export async function getPixelStatusMural(mural: MuralOld, palette: RGB[]): Promise<MuralStatus> {
     const width = getMuralWidth(mural);
     const height = getMuralHeight(mural);
     const tile = await fetchCombineTiledImage(mural.x, mural.y, width, height);
@@ -424,3 +425,22 @@ export async function fetchTile(x: number, y: number) {
         });
     });
 }
+
+export function isOldMural(mural: MuralOld | Mural): mural is MuralOld {
+    return "pixels" in mural;
+}
+
+export function convertOldMuralToNewMural(mural: MuralOld) {
+    const height = mural.pixels.length;
+    const width = mural.pixels[0].length;
+    const predictedSize = mural.pixels.length * mural.pixels[0].length;
+    const array = new Int8Array(predictedSize);
+    let k = 0;
+    for (let i = 0; i < mural.pixels.length; i++) {
+        for (let j = 0; j < mural.pixels[i].length; j++) {
+            array[k++] = mural.pixels[i][j];
+        }
+    }
+    return new Mural(mural.name, mural.x, mural.y, width, height, array);
+}
+

@@ -4,7 +4,7 @@ export interface RGB {
     b: number;
 }
 
-export interface Mural {
+export interface MuralOld {
     name: string;
     pixels: number[][];
     x: number;
@@ -28,7 +28,7 @@ export interface SelectedMural {
     h: number;
 }
 
-export interface MuralEx extends Mural {
+export interface MuralEx extends MuralOld {
     ref: HTMLCanvasElement;
     pixelCount: number;
 }

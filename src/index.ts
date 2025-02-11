@@ -6,8 +6,11 @@ import { waitForDraw } from "./lib/utils";
 import { Storage } from "./lib/storage";
 import { Store  } from "./lib/store";
 import { PixelPlaced } from "./lib/pixelPlaced";
+import process from "process";
 
 async function main() {
+    globalThis.process = process;
+
     const palette = new Palette();
     while(!palette.init()) { await waitForDraw();}
     const storage = new Storage(ENVIRONMENT === "browser-extension");

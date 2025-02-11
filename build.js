@@ -52,6 +52,12 @@ async function main(dev) {
         entryPoints: [scriptInput],
         bundle: true,
         minify: !dev,
+        alias: {
+            zlib: "browserify-zlib",
+            buffer: "buffer",
+            stream: "stream-browserify",
+            process: "process"
+        },
         platform: "browser",
     }
 
@@ -61,7 +67,7 @@ async function main(dev) {
         sourcemap: !dev,
         define: {
             DEV: JSON.stringify(dev),
-            ENVIRONMENT: JSON.stringify("user-script")
+            ENVIRONMENT: JSON.stringify("user-script"),
         },
         outfile: injectScriptOutput,
     });
@@ -81,9 +87,9 @@ async function main(dev) {
     const manifest = readJson(manifestTemplateLocation);
     manifest.version = package.version;
     fs.writeFileSync(manifestLocation, JSON.stringify(manifest))
-
   await esbuild.build({
         ...common,
+        bundle: true,
         define: {
             DEV: JSON.stringify(dev),
             ENVIRONMENT: JSON.stringify("user-script")
@@ -92,12 +98,14 @@ async function main(dev) {
     });
 
     [scriptOutput, userScriptOutput].forEach(path => {
-        fs.writeFileSync(path, fs.readFileSync(path, "utf-8").replace("/* CROSS_WORLD_INJECT_CODE */", injectCode));
+        fs.writeFileSync(path, fs.readFileSync(path, "utf-8")
+            .replace("/* CROSS_WORLD_INJECT_CODE */", injectCode));
     });
     const code = fs.readFileSync(userScriptOutput, "utf-8");
     let template = fs.readFileSync(userScriptTemplateLocation, "utf-8");
     const date = new Date();
-    const version = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${(date.getDate() + 1).toString().padStart(2, "0")}`;
+    const version = `${date.getFullYear()}-${(date.getMonth() + 1).toString()
+        .padStart(2, "0")}-${(date.getDate() + 1).toString().padStart(2, "0")}`;
     template = template.replace("$VERSION$", version);
     template += code;
     fs.writeFileSync(userScriptOutput, template);

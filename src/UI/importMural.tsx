@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Mural, RGB } from "../interfaces";
+import { MuralOld, RGB } from "../interfaces";
 import { canvasToImageData, get2DArrHeight, get2DArrWidth, getColorScore, getExtension,
     imageDataToPaletteIndices, imageToCanvas, loadImageSource, processNumberEvent,
     readAsArrayBuffer,
@@ -14,7 +14,7 @@ import { Palette } from "../lib/palette";
 import { FileInput } from "../lib/fileinput";
 import { Store } from "../lib/store";
 import { Coordinates } from "../lib/coordinates";
-import { deserializeMural } from "./serializer";
+import { Mural } from "../lib/mural";
 
 export const TEXT_FORMATS = ["muraljson", "json"];
 export const BIN_FORMATS = ["pcm", "bin"];
@@ -89,11 +89,11 @@ export async function importArtWork(store: Store, cords: Coordinates, palette: P
     const file = await importFile();
     if (file) {
         if (file.type === "mural") {
-            return file.data as Mural;
+            return file.data as MuralOld;
         } else {
             const img = file.data as HTMLImageElement;
             const pixels = await imageToMural(img, palette);
-            const mural = await new Promise<Mural>((resolve, reject)=> {
+            const mural = await new Promise<MuralOld>((resolve, reject)=> {
                 store.setOverlayModify({
                     pixels,
                     muralObj: {
@@ -483,23 +483,49 @@ async function importFile() {
     const name = ex.text;
     if (TEXT_FORMATS.includes(etn)) {
         const content = await readAsString(fileData);
-        const mural = JSON.parse(content) as Mural;
+        const mural = JSON.parse(content) as MuralOld;
         if (!mural.name) {
             mural.name = await Popup
                 .prompt("Missing name for this mural. Please enter it manually", name) || "";
         }
-        validateMural(mural);
+
         return {
             type: "mural",
             data: mural,
         };
     } else if (BIN_FORMATS.includes(etn)) {
         const buffer = await readAsArrayBuffer(fileData);
-        const mural = deserializeMural(buffer);
-        validateMural(mural);
+        const mural = await Mural.from(new Uint8Array(buffer));
+        const pixelBuffer = mural.pixelBuffer;
+        const pixels = Array.from({ length: mural.h }, () => Array(mural.w).fill(0));
+        let i = 0;
+        let yy = -1;
+        leg:
+        for (;;) {
+            yy++;
+            if (pixelBuffer[i] === undefined) {
+                break;
+            }
+            // const ref = [];
+            // pixels.push(ref);
+            for (let xx = 0; xx < mural.w; xx++) {
+                const item = pixelBuffer[i++];    
+                if (item != undefined) {
+                    pixels[yy][xx] = item;
+                    if(item > 15) {
+                        console.log(item);
+                    }
+                    //ref.push(item);
+                } else {
+                    break leg;
+                }
+            }
+        }
         return {
             type: "mural",
-            data: mural,
+            data: {
+                name, x: mural.x, y: mural.y, pixels,
+            },
         };
     } else {
         const readData = await readAsDataUrl(fileData);

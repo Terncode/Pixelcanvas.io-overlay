@@ -56,7 +56,10 @@ export class Coordinates {
     private get centerCanvas() {
         const hww = window.innerWidth / 2; 
         const hhw = window.innerHeight / 2;
-        const canvasObject = [...document.getElementsByTagName("canvas")].filter(c => c.classList.contains("leaflet-tile")).map(c => {
+        const canvasObject = [
+            ...document.getElementsByTagName("canvas")]
+            .filter(c => c.classList.contains("leaflet-tile"))
+            .map(c => {
             const bounds = c.getBoundingClientRect();
             return {
                 canvas: c,
@@ -70,6 +73,7 @@ export class Coordinates {
                 },
             };
         }).find(r => hww > r.bounds.left && hww < r.bounds.right && hhw > r.bounds.top && hhw < r.bounds.bottom);
+
         if (canvasObject) {
             const ratio = canvasObject.canvas.width / CHUNK_SIZE;
             if (ratio === 2) { // scale -1
@@ -137,12 +141,16 @@ export class Coordinates {
         const pathNames = location.pathname.split("/").filter(e => e);
         const cordsRaw = pathNames[0];
         if (cordsRaw) {
-            const cords = cordsRaw.match(/-?\d+/g)!.map(n => parseInt(n));
-            if (typeof cords[0] === "number" && typeof cords[1] === "number" && typeof cords[2] === "number") {
-                this._ux = cords[0];
-                this._uy = cords[1];
-                this._uScale = cords[2];
-                return cords;
+            const cordsMatch = cordsRaw.match(/-?\d+/g);
+            if (cordsMatch) {
+                const cords = cordsMatch.map(n => parseInt(n));
+                if (typeof cords[0] === "number" && typeof cords[1] === "number" && typeof cords[2] === "number") {
+                    this._ux = cords[0];
+                    this._uy = cords[1];
+                    this._uScale = cords[2];
+                    return cords;
+                }
+                console.log(cordsMatch);
             }
         }
         return null;
