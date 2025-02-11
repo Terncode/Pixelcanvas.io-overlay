@@ -7,7 +7,7 @@ import { Store } from "../../lib/store";
 import { MuralList } from "./muralList";
 import { Coordinates, CordType } from "../../lib/coordinates";
 import { Palette } from "../../lib/palette";
-import { importArtWork } from "../importMural";
+import { importArtWorks } from "../importMural";
 import { Popup } from "./Popup";
 import { Storage } from "../../lib/storage";
 import { takeCanvasShot } from "../../lib/canvashot";
@@ -106,8 +106,8 @@ export class Menu extends React.Component<Props, State> {
 
     import = async () => {
         try {
-            const mural = await importArtWork(this.props.store, this.props.cords,  this.props.palette);
-            if (mural) {
+            const murals = await importArtWorks(this.props.store, this.props.cords,  this.props.palette);
+            for (const mural of murals) {
                 this.props.store.add(mural);
             }
         } catch (error) {

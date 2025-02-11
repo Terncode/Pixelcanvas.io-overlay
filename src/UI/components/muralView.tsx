@@ -14,7 +14,6 @@ import { BIN_FORMATS } from "../importMural";
 import saveAs from "file-saver";
 import { Popup } from "./Popup";
 import { Palette } from "../../lib/palette";
-import { Mural } from "../../lib/mural";
 
 const Margin = styled.div`
     margin: 2px;
