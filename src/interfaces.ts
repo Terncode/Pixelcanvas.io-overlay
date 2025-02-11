@@ -1,3 +1,5 @@
+import { Mural } from "./lib/mural";
+
 export interface RGB {
     r: number;
     g: number;
@@ -22,13 +24,8 @@ export interface LoadUnload {
     unload: () => Promise<void> | void;
 }
 
-export interface SelectedMural {
-    m: MuralEx;
-    w: number;
-    h: number;
-}
-
-export interface MuralEx extends MuralOld {
+export interface MuralEx {
+    mural: Mural;
     ref: HTMLCanvasElement;
     pixelCount: number;
 }
@@ -44,3 +41,15 @@ export interface Rect {
     width: number;
     height: number;
 }
+
+export interface ImportOutputMural {
+    type: "mural", 
+    data: Mural
+}
+
+export interface ImportOutputImage {
+    type: "image", 
+    data: HTMLImageElement;
+}
+
+export type ImportOutput = ImportOutputImage | ImportOutputMural;

@@ -5,12 +5,12 @@ import { Coordinates } from "../../lib/coordinates";
 import { Palette } from "../../lib/palette";
 import { Menu } from "./menu";
 import { MovableWindow } from "./movableWindow";
-import { SelectedMural } from "../../interfaces";
 import { Minimap } from "./minimap";
 import { Overlay } from "./overlay";
 import { debounce } from "lodash";
 import { TC_LOGO } from "../../constants";
 import  styled from "styled-components";
+import { MuralEx } from "../../interfaces";
 
 const Img = styled.img`
   width: 25px;
@@ -33,7 +33,7 @@ interface Props {
 }
 
 interface State extends StoreSettings{
-    selected?: SelectedMural;
+    selected?: MuralEx;
     overlays: number[];
     phantomOverlay: number;
     overlayModify?: OverlayReturn;
@@ -127,14 +127,14 @@ export class Main extends React.Component<Props, State> {
                 opacity={this.state.opacity}
                 cords={this.props.cords}
                 palette={this.props.palette}
-                mural={this.props.store.murals[o]}
+                muralExtended={this.props.store.murals[o]}
             /> )}
             {this.props.store.murals[this.state.phantomOverlay] ? <Overlay 
                 storage={this.props.storage}
                 opacity={50}
                 cords={this.props.cords}
                 palette={this.props.palette}
-                mural={this.props.store.murals[this.state.phantomOverlay]}
+                muralExtended={this.props.store.murals[this.state.phantomOverlay]}
                 /> : null }
             {this.state.overlayModify ? <Overlay 
                 muralObj={this.state.overlayModify.muralObj}
@@ -142,7 +142,7 @@ export class Main extends React.Component<Props, State> {
                 storage={this.props.storage}
                 cords={this.props.cords}
                 palette={this.props.palette}
-                mural={this.props.store.overlayModify!.pixels}
+                muralExtended={this.props.store.overlayModify!.mural}
             onChange={(name, x, y, confirm) => {
                 this.state.overlayModify!.cb(name, x, y, confirm);
             }} /> : null}

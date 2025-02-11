@@ -14,6 +14,10 @@ export class Mural {
         this.validate();
     }
 
+    clone() {
+        return new Mural(this.name, this.x, this.y, this.w, this.h, this._b.slice());
+    }
+
     getBuffer() {
         this.validate();
         const encoder = new TextEncoder();

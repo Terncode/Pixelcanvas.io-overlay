@@ -1,10 +1,10 @@
 import React from "react";
 import { Store } from "../../lib/store";
-import { MuralEx, MuralOld, MuralStatus } from "../../interfaces";
+import { MuralEx, MuralStatus } from "../../interfaces";
 import styled from "styled-components";
 import { A, Border, Btn, Flex, SELECTED_COLOR } from "../styles";
 import { CanvasToCanvasJSX } from "./canvasToCanvasJSX";
-import { convertOldMuralToNewMural, formatNumber, getMuralHeight, getMuralWidth, getPixelStatusMural } from "../../lib/utils";
+import { formatNumber, getPixelStatusMural } from "../../lib/utils";
 import { 
     IconDefinition, faDownload, faLayerGroup, faLocation, faPenToSquare, faRefresh, faTrash 
 } from "@fortawesome/free-solid-svg-icons";
@@ -66,7 +66,7 @@ export const BtnSmall = styled.button`
 `;
 
 interface Props {
-    mural: MuralEx;
+    muralExtended: MuralEx;
     selected: boolean;
     store: Store;
     palette: Palette;
@@ -102,7 +102,7 @@ export class MuralView extends React.Component<Props, State> {
         this.props.cords.off(CordType.Url, this.onCordUpdate); 
     }
     componentDidUpdate(prevProps: Readonly<Props> ) {
-        if (this.props.mural.ref !== prevProps.mural.ref) {
+        if (this.props.muralExtended.ref !== prevProps.muralExtended.ref) {
             this.updateSize();
             if (typeof this.state.progress === "function") {
                 typeof this.state.progress();
@@ -116,8 +116,8 @@ export class MuralView extends React.Component<Props, State> {
     };
 
     updateSize = () => {   
-        const w = this.props.mural.ref.width;
-        const h = this.props.mural.ref.height;
+        const w = this.props.muralExtended.ref.width;
+        const h = this.props.muralExtended.ref.height;
 
         let width = w;
         let height = h;
@@ -153,26 +153,26 @@ export class MuralView extends React.Component<Props, State> {
         if ("tagName" in tr) {
             const ignore = ["button", "svg", "path"];
             if (!ignore.includes(tr.tagName.toLowerCase())) {
-                this.s.select(this.props.selected ? undefined : this.props.mural );
+                this.s.select(this.props.selected ? undefined : this.props.muralExtended );
             }
         }
     };
     onModify = async () => {
-        const mural = this.props.mural;
+        const muralExtended = this.props.muralExtended;
         this.props.store.setOverlayModify({
-            pixels: this.props.mural.pixels,
+            mural: muralExtended,
             cb: (name, x, y, confirm) => {
                 if (confirm) {
-                    mural.name = name; 
-                    mural.x = x; 
-                    mural.y = y;
-                    this.props.store.updateMural(mural); 
+                    muralExtended.mural.name = name; 
+                    muralExtended.mural.x = x; 
+                    muralExtended.mural.y = y;
+                    this.props.store.updateMural(muralExtended.mural); 
                 }
             },
             muralObj: {
-                name: this.props.mural.name,
-                x: this.props.mural.x,
-                y: this.props.mural.y
+                name: this.props.muralExtended.mural.name,
+                x: this.props.muralExtended.mural.x,
+                y: this.props.muralExtended.mural.y
             }
         });
 
@@ -212,39 +212,35 @@ export class MuralView extends React.Component<Props, State> {
         // }
     };
     onExport = async () => {
-        const rawMural: MuralOld = {
-            name: this.props.mural.name,
-            x: this.props.mural.x,
-            y: this.props.mural.y,
-            pixels: this.props.mural.pixels,
-        };
-        const mural = convertOldMuralToNewMural(rawMural);
+        const mural = this.props.muralExtended.mural;
         const buffer = await mural.getBuffer();
         const blob = new Blob([buffer], { type: "octet/stream" });
 
-        const saveName = rawMural.name
+        const saveName = mural.name
             .replace(/ /, "_")
             .replace(/[^a-zA-Z0-9-_]/g, "");
 
         saveAs(blob, `${saveName}.${BIN_FORMATS[0]}`);
     };
     onDelete = async () => {
-        if (await Popup.confirm(`Are you sure you want to remove "${this.props.mural.name}"`)) {
-            this.s.remove(this.props.mural);
+        if (await Popup
+                .confirm(`Are you sure you want to remove "${this.props.muralExtended.mural.name}"`)
+            ) {
+            this.s.remove(this.props.muralExtended);
         }
     };
     onEnter = () => {
-        this.props.store.addPhantomOverlay(this.props.mural);
+        this.props.store.addPhantomOverlay(this.props.muralExtended);
     };
     onLeave = () => {
         this.props.store.removePhantomOverlay();
     };
 
     get link() {
-        const weight = getMuralWidth(this.props.mural);
-        const height = getMuralHeight(this.props.mural);
-        const x = this.props.mural.x + Math.round(weight / 2);
-        const y = this.props.mural.y + Math.round(height / 2);
+        const weight = this.props.muralExtended.mural.w;
+        const height = this.props.muralExtended.mural.h;
+        const x = this.props.muralExtended.mural.x + Math.round(weight / 2);
+        const y = this.props.muralExtended.mural.y + Math.round(height / 2);
         const o = origin === "null" ? `${location.href}` : `${origin}/`;
         return `${o}@${x},${y},${this.props.cords.uScale}`;
     }
@@ -254,10 +250,10 @@ export class MuralView extends React.Component<Props, State> {
     };
 
     onPreview = () => {
-        if (this.props.store.hasOverlay(this.props.mural)) {
-            this.props.store.removeOverlay(this.props.mural);
+        if (this.props.store.hasOverlay(this.props.muralExtended)) {
+            this.props.store.removeOverlay(this.props.muralExtended);
         } else {
-            this.props.store.addOverlay(this.props.mural);
+            this.props.store.addOverlay(this.props.muralExtended);
         }
     };
 
@@ -267,7 +263,9 @@ export class MuralView extends React.Component<Props, State> {
             canceled = true;
         };
         this.setState({progress: cancelFn});
-        const data = await getPixelStatusMural(this.props.mural, this.props.palette.palette);
+        const data = await getPixelStatusMural(
+            this.props.muralExtended.mural, this.props.palette.palette
+        );
         if (!canceled) {
             this.setState({progress: data});
         }
@@ -293,18 +291,21 @@ export class MuralView extends React.Component<Props, State> {
                 cursor: "pointer" }}
             onMouseEnter={this.onEnter} onMouseLeave={this.onLeave}>
             <Flex>
-                <CanvasToCanvasJSX canvas={this.props.mural.ref} height={this.state.height} width={this.state.width}/>
+                <CanvasToCanvasJSX canvas={this.props.muralExtended.ref} height={this.state.height} width={this.state.width}/>
                 <Margin style={{flex: "1"}}>
-                    {this.renderInfoLine("Name", this.props.mural.name)}
-                    {this.renderInfoLine("Pixel count", formatNumber(this.props.mural.pixelCount))}
-                    {this.renderInfoLine("X", this.props.mural.x.toString() )}
-                    {this.renderInfoLine("Y", this.props.mural.y.toString() )}
-                    {this.renderInfoLine("Size", `${getMuralWidth(this.props.mural)}x${getMuralHeight(this.props.mural)}`)}
+                    {this.renderInfoLine("Name", this.props.muralExtended.mural.name)}
+                    {this.renderInfoLine("Pixel count", formatNumber(this.props.muralExtended.pixelCount))}
+                    {this.renderInfoLine("X", this.props.muralExtended.mural.x.toString() )}
+                    {this.renderInfoLine("Y", this.props.muralExtended.mural.y.toString() )}
+                    {this.renderInfoLine(
+                        "Size",
+                        `${this.props.muralExtended.mural.w}x${this.props.muralExtended.mural.w}`
+                        )}
                     {this.renderInfoLine("Progress", this.renderProgress())}
                 </Margin>
             </Flex>
             <Flex>
-                {this.btn("Preview", faLayerGroup, this.onPreview, this.props.store.hasOverlay(this.props.mural))}
+                {this.btn("Preview", faLayerGroup, this.onPreview, this.props.store.hasOverlay(this.props.muralExtended))}
                 {this.btn("Modify", faPenToSquare, this.onModify)}
                 {this.btn("Export", faDownload, this.onExport)}
                 {this.btn("Delete", faTrash, this.onDelete)}

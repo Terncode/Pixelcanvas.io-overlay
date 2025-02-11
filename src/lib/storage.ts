@@ -28,7 +28,7 @@ export class Storage {
         }
         return Promise.resolve();
     }
-    deleteItem(key: string) {
+    removeItem(key: string) {
         if (this.chrome) {
             return new Promise<void>(r => {
                 chrome.storage.local.remove(key, r);

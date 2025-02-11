@@ -1,8 +1,13 @@
 import { BasicEventEmitter, Listener } from "./eventEmitter";
-import { LoadUnload, Mural, MuralEx, SelectedMural } from "../interfaces";
+import { LoadUnload, MuralEx, MuralOld } from "../interfaces";
 import { Palette } from "./palette";
 import { Storage } from "./storage";
-import { canvasFromMural, getMuralHeight, getMuralWidth, pushUnique, removeItem } from "./utils";
+import localforage from "localforage";
+import { 
+    convertOldMuralToNewMural, createMuralExtended,
+    pushUnique, removeItem
+} from "./utils";
+import { Mural } from "./mural";
 
 export enum StoreEvents {
     MuralAdd = 1,
@@ -15,7 +20,7 @@ export enum StoreEvents {
 }
 
 export interface OverlayReturn {
-    pixels: number[][];
+    mural: MuralEx;
     muralObj?: Partial<Mural>;
     cb: (name: string, x: number, y: number, confirm?: boolean) => void; 
 }
@@ -24,23 +29,53 @@ export class Store implements LoadUnload {
     private readonly STORAGE_KEY_MURAL = "_murals";
     private readonly STORAGE_KEY_SELECTED = "_mural";
     private _murals: MuralEx[] = [];
-    private _selected: SelectedMural | undefined;
+    private _selected?: MuralEx;
     private emitter = new BasicEventEmitter();
     private _overlayIndices: number[] = [];
     private _phantomOverlay = -1;
     private _overlayModify?: OverlayReturn;
+    private db = localforage.createInstance({
+        name: "pixel-canvas-overlay"
+      });
     
     constructor(private storage: Storage, private palette: Palette) {}
 
     async load() {
-        this._murals = await this.storage.getItem<MuralEx[]>(this.STORAGE_KEY_MURAL) || [];
-        for (const mural of this._murals) {
-            const { canvas, pixels } = canvasFromMural(mural.pixels, this.palette.hex);
-            mural.ref = canvas;
-            mural.pixelCount = pixels;
+        console.log("loaded");
+        this._murals  = [];
+        const rawMurals = await this.db.getItem<Uint8Array[]>(this.STORAGE_KEY_MURAL) || [];
+        
+        const murals = await Promise.all(rawMurals.map(e => Mural.from(e)));
+        // backwards compatibility
+        const oldMurals = await this.storage.getItem<MuralOld[]>(this.STORAGE_KEY_MURAL);
+        if (oldMurals) {
+            for (const old of oldMurals) {
+                const mural = convertOldMuralToNewMural(old);
+                murals.push(mural);
+            }
+            const muralBuffer = await Promise.all(murals.map(e => e.getBuffer()));
+            this.storage.removeItem(this.STORAGE_KEY_MURAL);
+            this.db.setItem(this.STORAGE_KEY_MURAL, muralBuffer);
         }
+
+        //const murals = await this.storage.getItem<Uint8Array[]>(this.STORAGE_KEY_MURAL);
+
+        for (const mural of murals) {
+            this._murals.push(createMuralExtended(mural, this.palette.hex));
+        }
+
+
         const index = await this.storage.getItem<number>(this.STORAGE_KEY_SELECTED) ?? -1;
-        this.select(this._murals[index]);
+        if (index != null) {
+            this.select(this._murals[index]);
+            this.storage.removeItem(this.STORAGE_KEY_SELECTED);
+            await this.db.setItem(this.STORAGE_KEY_SELECTED, index);
+        } else {
+            const index = await this.db.getItem<number>(this.STORAGE_KEY_SELECTED);
+            if (index != null) {
+                this.select(this._murals[index]);
+            }
+        }
     }
     updateMural(_mural: Mural) {
         this.save();
@@ -50,10 +85,7 @@ export class Store implements LoadUnload {
         this.save();
     }
     add(mural: Mural) {
-        const m = mural as MuralEx;
-        const { canvas, pixels } = canvasFromMural(mural.pixels, this.palette.hex);
-        m.ref = canvas;
-        m.pixelCount = pixels;
+        const m = createMuralExtended(mural, this.palette.hex);
         this._murals.push(m);
         this.emit(StoreEvents.Any);
         this.save();
@@ -63,7 +95,7 @@ export class Store implements LoadUnload {
         this._overlayIndices = [];
         this._overlayModify = undefined;
         this._phantomOverlay = -1; 
-        if (this._selected && this._selected?.m === mural) {
+        if (this._selected && this._selected === mural) {
             this._selected = undefined;
         }
         removeItem(this._murals, mural);
@@ -89,7 +121,7 @@ export class Store implements LoadUnload {
         this.emit(StoreEvents.MuralOverlay);
         this.save();
     }
-    setOverlayModify(overlay: OverlayReturn) {
+    setOverlayModify(overlay: OverlayReturn) { // WTF?
         this._overlayModify = overlay;
         const cb = overlay.cb;
         overlay.cb = (name, x, y, done) => {
@@ -105,25 +137,16 @@ export class Store implements LoadUnload {
     }
 
     select(mural: MuralEx | undefined) {
-        if (mural) {
-            this._selected = {
-                m: mural,
-                h: getMuralHeight(mural),
-                w: getMuralWidth(mural),
-            };
-        } else {
-            this._selected = undefined;
-        }
+        this._selected = mural;
         this.emit(StoreEvents.MuralSelect);
         this.save();
     }
 
     async save() {
-        await this.storage
-            .setItem(this.STORAGE_KEY_MURAL, this._murals
-                    .map(m => ({ name: m.name, pixels: m.pixels, x: m.x, y: m.y } as Mural)));
-        const selected = this._selected?.m ? this._murals.indexOf(this._selected?.m!) : -1;
-        await this.storage.setItem(this.STORAGE_KEY_SELECTED, selected);
+        const muralBuffer = await Promise.all(this._murals.map(e => e.mural.getBuffer()));
+        this.db.setItem(this.STORAGE_KEY_MURAL, muralBuffer);
+        const selected = this._selected ? this._murals.indexOf(this._selected) : -1;
+        await this.db.setItem(this.STORAGE_KEY_SELECTED, selected);
     }
     addPhantomOverlay(mural: MuralEx) {
         const index = this._murals.indexOf(mural);

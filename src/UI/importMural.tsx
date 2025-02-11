@@ -1,10 +1,10 @@
 
 import React from "react";
-import { MuralOld, RGB } from "../interfaces";
-import { canvasToImageData, get2DArrHeight, get2DArrWidth, getColorScore, getExtension,
+import { ImportOutput, MuralOld, RGB } from "../interfaces";
+import { canvasToImageData, convertOldMuralToNewMural, getColorScore, getExtension,
     imageDataToPaletteIndices, imageToCanvas, loadImageSource, processNumberEvent,
     readAsArrayBuffer,
-    readAsDataUrl, readAsString, resize, rgb, validateMural } from "../lib/utils";
+    readAsDataUrl, readAsString, resize, rgb } from "../lib/utils";
 import styled from "styled-components";
 import { Popup } from "./components/Popup";
 import RgbQuant, { DitheringKernel, RGBQuantOptions } from "rgbquant";
@@ -56,7 +56,7 @@ type DitheringKernelEx = DitheringKernel | "Flat";
 interface QuantResult {
     type: DitheringKernelEx;
     canvas: HTMLCanvasElement;
-    indices: number[][];
+    indices: Int8Array;
 }
 
 type DitherSetting = DitheringKernel | "Flat" | "show-all";
@@ -85,33 +85,35 @@ export interface ImageToMuralOptions {
     quantizerSetting: DitherSetting;
 }
 
-export async function importArtWorks(store: Store, cords: Coordinates, palette: Palette) {
+export async function importArtWorks(
+    store: Store, cords: Coordinates, palette: Palette
+): Promise<Mural[]>  {
     const files = await importFiles();
-    const output: MuralOld[] = [];
+    const output: Mural[] = [];
     for (const file of files) {
         if (file.type === "mural") {
             output.push(file.data);
         } else {
-            const img = file.data as HTMLImageElement;
+            const img = file.data;
             const pixels = await imageToMural(img, palette);
-            const mural = await new Promise<MuralOld>((resolve, reject)=> {
+            const mural = await new Promise<Mural>((resolve, reject)=> {
                 store.setOverlayModify({
                     pixels,
                     muralObj: {
                         name: img.alt,
-                        x: Math.floor(cords.ux - (get2DArrWidth(pixels) / 2)),
-                        y: Math.floor(cords.uy - (get2DArrHeight(pixels) / 2)),
+                        x: Math.floor(cords.ux - (img.width / 2)),
+                        y: Math.floor(cords.uy - (img.height / 2)),
                     },
                     cb: (name, x, y, confirm) => {
                         if (confirm) {
-                            resolve({ name, pixels, x, y });
+                            const mural = new Mural(name, x,y,img.width, img.height, pixels);
+                            resolve(mural);
                         } else {
                             reject(new Error("Canceled by user"));
                         }
                     }
                 });
             });
-            validateMural(mural);
             output.push(mural);
         }
     }
@@ -472,7 +474,7 @@ export function imageDataToCanvas(imageData: ImageData) {
     return canvas;
 }
 
-async function importFiles() {
+async function importFiles(): Promise<ImportOutput[]> {
     const fileInput = new FileInput();
     const images = ["png", "jpg", "jpeg"];
     fileInput.setAcceptType([...images, ...TEXT_FORMATS, ...BIN_FORMATS]);
@@ -489,13 +491,7 @@ async function importFiles() {
         throw new Error("Only one image files allowed to be imported at the time");
     }
 
-    const output: ({
-        type: "mural",
-        data: MuralOld
-    } | {
-        type: "image",
-        data: HTMLImageElement
-    })  [] = [];
+    const output: ImportOutput[] = [];
     for (const file of filteredFiles) {
         const ex = getExtension(file.name);
         const etn = ex.ex.toLowerCase();
@@ -507,41 +503,17 @@ async function importFiles() {
                 mural.name = await Popup
                     .prompt("Missing name for this mural. Please enter it manually", name) || "";
             }
-    
+
             output.push({
                 type: "mural",
-                data: mural,
+                data: convertOldMuralToNewMural(mural),
             });
         } else if (BIN_FORMATS.includes(etn)) {
             const buffer = await readAsArrayBuffer(file);
             const mural = await Mural.from(new Uint8Array(buffer));
-            const pixelBuffer = mural.pixelBuffer;
-            const pixels = Array.from({ length: mural.h }, () => Array(mural.w).fill(0));
-            let i = 0;
-            let yy = -1;
-            leg:
-            for (;;) {
-                yy++;
-                if (pixelBuffer[i] === undefined) {
-                    break;
-                }
-                // const ref = [];
-                // pixels.push(ref);
-                for (let xx = 0; xx < mural.w; xx++) {
-                    const item = pixelBuffer[i++];    
-                    if (item != undefined) {
-                        pixels[yy][xx] = item;
-                        //ref.push(item);
-                    } else {
-                        break leg;
-                    }
-                }
-            }
             output.push({
                 type: "mural",
-                data: {
-                    name, x: mural.x, y: mural.y, pixels,
-                },
+                data: mural,
             });
         } else {
             const readData = await readAsDataUrl(file);

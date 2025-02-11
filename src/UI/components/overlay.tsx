@@ -1,12 +1,12 @@
 import React from "react";
 import styled from "styled-components";
-import { Mural, MuralEx } from "../../interfaces";
-import { canvasFromMural, get2DArrHeight, get2DArrWidth } from "../../lib/utils";
+import { MuralEx } from "../../interfaces";
 import { Coordinates, CordType } from "../../lib/coordinates";
 import { Palette } from "../../lib/palette";
 import { MovableWindow } from "./movableWindow";
 import { Storage } from "../../lib/storage";
 import { MuralEditor } from "./muralEditor";
+import { Mural } from "../../lib/mural";
 
 const Canvas = styled.canvas`
     position: fixed;
@@ -15,7 +15,7 @@ const Canvas = styled.canvas`
 `;
 
 interface Props {
-    mural: MuralEx | Mural | number[][];
+    muralExtended: MuralEx;
     muralObj?: Partial<Mural>;
     onChange?: (name: string, x: number, y:number, confirm?: boolean) => void;
     cords: Coordinates;
@@ -61,7 +61,7 @@ export class Overlay extends React.Component<Props, State> {
     }
 
     componentDidUpdate(prevProps: Readonly<Props>, prevState: Readonly<State>) {
-        if (prevProps.mural !== this.props.mural) {
+        if (prevProps.muralExtended !== this.props.muralExtended) {
             this._refImage = undefined;
             this.setState({
                 x: 0, y: 0
@@ -72,43 +72,21 @@ export class Overlay extends React.Component<Props, State> {
         }
     }
 
-    private isPixels(pixels: MuralEx | Mural | number[][]): pixels is number[][] {
-        return Array.isArray(pixels);
-    }   
 
     get pixels() {
-        if (this.isPixels(this.props.mural)) {
-            return this.props.mural;
-        } else {
-            return this.props.mural.pixels;
-        }
+        return this.props.muralExtended.mural.pixelBuffer;
     }
 
     get x() {
-        if (this.isPixels(this.props.mural)) {
-            return this.state.x;
-        } else {
-            return this.props.mural.x;
-        }
+        return this.props.muralExtended.mural.x;
     }
 
     get y() {
-        if (this.isPixels(this.props.mural)) {
-            return this.state.y;
-        } else {
-            return this.props.mural.y;
-        }
+        return this.props.muralExtended.mural.y;
     }
 
     get refImg() {
-        if (!Array.isArray(this.props.mural) && "ref" in this.props.mural) {
-            return this.props.mural.ref;
-        }
-        if (this._refImage) {
-            return this._refImage;
-        }
-        this._refImage = canvasFromMural(this.pixels, this.props.palette.hex).canvas;
-        return this._refImage;
+        return this.props.muralExtended.ref;
     }
 
     draw = () => {
@@ -122,8 +100,8 @@ export class Overlay extends React.Component<Props, State> {
         }
         const { x, y } = cords;
 
-        const width = get2DArrWidth(this.pixels) * scale;
-        const height = get2DArrHeight(this.pixels) * scale; 
+        const width = this.props.muralExtended.mural.w * scale;
+        const height = this.props.muralExtended.mural.h * scale; 
         if (width !== canvas.width || height !== canvas.height ) {
             canvas.width = width;
             canvas.height = height;

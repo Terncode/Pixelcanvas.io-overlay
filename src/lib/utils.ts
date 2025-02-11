@@ -1,5 +1,5 @@
 import { clone, isInteger } from "lodash";
-import { MuralOld, MuralStatus, RGB } from "../interfaces";
+import { MuralEx, MuralOld, MuralStatus, RGB } from "../interfaces";
 import { fetchCombineTiledImage } from "./canvashot";
 import { Mural } from "./mural";
 
@@ -240,12 +240,12 @@ export function flatQuantizeImageData(imageData: ImageData, palette: RGB[]) {
     }
 }
 
-export async function getPixelStatusMural(mural: MuralOld, palette: RGB[]): Promise<MuralStatus> {
-    const width = getMuralWidth(mural);
-    const height = getMuralHeight(mural);
+export async function getPixelStatusMural(mural: Mural, palette: RGB[]): Promise<MuralStatus> {
+    const width = mural.w;
+    const height = mural.h;
     const tile = await fetchCombineTiledImage(mural.x, mural.y, width, height);
     const imageData = tile.getContext("2d")?.getImageData(0, 0, width, height);
-    const buffer = mural.pixels.flat();
+    const buffer = mural.pixelBuffer;
     let total = 0;
     let bad = 0;
     let good = 0;
@@ -272,36 +272,31 @@ export async function getPixelStatusMural(mural: MuralOld, palette: RGB[]): Prom
 
 export function imageDataToPaletteIndices(imageData: ImageData, palette: RGB[]) {
     const { height, width } = imageData;
-    const pixels: number[][] = [];
-    for (let i = 0; i < height; i++) {
-        pixels.push([]);
-    }
+    let k = 0;
+    const pixels = new Int8Array(height * width);
     for (let i = 0; i < imageData.data.length; i += 4) {
         const r = imageData.data[i + 0] ?? 0;
         const g = imageData.data[i + 1] ?? 0;
         const b = imageData.data[i + 2] ?? 0;
         const a = imageData.data[i + 3] ?? 0xff;
-
-        const line = Math.floor(Math.floor(i / 4) / width);
-        const data = pixels[line] || [];
         if (a < 25) {
-            data.push(-1);
+            pixels[k++] = -1;
         } else {
             const index = findClosestFormArray(rgb(r, g, b), palette);
-            data.push(index);
+            pixels[k++] = index;
         }
     }
     return pixels;
 }
 
 export function findClosestFormArray(rgbO: RGB, palette: RGB[]) {
-    const scores: number[] = [];
+    const scores: number[] = new Array(palette.length).fill(0);
 
-    for (const rgb of palette) {
-        const r = getColorScore(rgbO.r, rgb.r);
-        const g = getColorScore(rgbO.g, rgb.g);
-        const b = getColorScore(rgbO.b, rgb.b);
-        scores.push(r + g + b);
+    for (let i = 0; i < palette.length; i++) {
+        const r = getColorScore(rgbO.r, palette[i].r);
+        const g = getColorScore(rgbO.g, palette[i].g);
+        const b = getColorScore(rgbO.b, palette[i].b);
+        scores[i] = (r + g + b);
     }
     const lowest = Math.min(...scores);
     const index = scores.indexOf(lowest);
@@ -318,24 +313,20 @@ export function imageToCanvas(image: HTMLImageElement) {
 }
 
 export function drawPixelsOntoCanvas(
-    canvas: HTMLCanvasElement, pixelsData: number[][], palette: string[], pixelSize = 1
+    canvas: HTMLCanvasElement, mural: Mural, palette: string[], pixelSize = 1
 ) {    
     const ctx = canvas.getContext("2d")!;
     if (!ctx) return 0;
-    const data = pixelsData;
-    const height = data.length * pixelSize;
-    const width = data[0] ? data[0].length * pixelSize : 0;
     if (!(canvas instanceof OffscreenCanvas)){
-        canvas.width = width;
-        canvas.height = height;
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
+        canvas.width = mural.w;
+        canvas.height = mural.h;
+        canvas.style.width = `${mural.w}px`;
+        canvas.style.height = `${mural.h}px`;
     }
     let pixels = 0;
-    for (let x = 0; x < width; x ++) {
-        for (let y = 0; y < height; y++) {
-            const yd = data[y];
-            const index = (yd && yd[x]);
+    for (let x = 0; x < mural.w; x ++) {
+        for (let y = 0; y < mural.h; y++) {
+            const index = mural.getPixel(x, y);
             if (index != null && index > -1) {
                 pixels++;
                 const aColor = palette[index]!;
@@ -343,7 +334,6 @@ export function drawPixelsOntoCanvas(
                     throw new Error(`Unknown color at ${index}`);
                 }
                 ctx.fillStyle = aColor;
-    
                 ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
             }
         }
@@ -373,12 +363,22 @@ export function toChunkY(y: number) {
     return Math.floor(y / CHUNK_SIZE) * CHUNK_SIZE;
 }
 
-export function canvasFromMural(pixelsToDraw: number[][], hex: string[]) {
+export function canvasFromMural(mural: Mural, palette: string[]) {
     const canvas = document.createElement("canvas");
-    canvas.width = get2DArrWidth(pixelsToDraw);
-    canvas.height = get2DArrHeight(pixelsToDraw);
-    const pixels = drawPixelsOntoCanvas(canvas, pixelsToDraw, hex);
+    canvas.width = mural.w;
+    canvas.height = mural.h;
+    const pixels = drawPixelsOntoCanvas(canvas, mural, palette);
     return { canvas, pixels };
+}
+
+
+export function createMuralExtended(mural: Mural, palette: string[]): MuralEx {
+    const { canvas, pixels } = canvasFromMural(mural, palette);
+    return {
+        mural,
+        pixelCount: pixels,
+        ref: canvas
+    };
 }
 
 let numberFormatter: Intl.NumberFormat;
