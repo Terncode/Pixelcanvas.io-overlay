@@ -512,9 +512,6 @@ async function importFile() {
                 const item = pixelBuffer[i++];    
                 if (item != undefined) {
                     pixels[yy][xx] = item;
-                    if(item > 15) {
-                        console.log(item);
-                    }
                     //ref.push(item);
                 } else {
                     break leg;
