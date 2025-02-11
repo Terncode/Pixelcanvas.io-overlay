@@ -6,10 +6,30 @@
     <link rel="stylesheet" href="style.css">
 
     <title>Pixel canvas emulator</title>
+    <style> 
+        .mid {
+            position: fixed;
+            width: 5px;
+            height: 5px;
+            background-color: black;
+            top: 50%;
+            left: 50%
+        }
+        .leaflet-tile {
+            position: fixed;
+            width: 250px;
+            height: 250px;
+            top: calc(50% - 250px);
+            left: calc(50% - 250px);
+            border: 1px solid black
+        }
+
+    </style>
 </head>
 
 <body>
-
+    <canvas class="leaflet-tile" ></canvas>
+    <div class="mid"></div>
     <!-- palette -->
     <div>
         <button style="background-color: rgb(255, 255, 255);"></button>
