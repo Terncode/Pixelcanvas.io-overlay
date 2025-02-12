@@ -15,12 +15,13 @@ import { FileInput } from "../lib/fileinput";
 import { Store } from "../lib/store";
 import { Coordinates } from "../lib/coordinates";
 import { Mural } from "../lib/mural";
+import JSZip from "jszip";
 
 export const TEXT_FORMATS = ["muraljson", "json"];
 export const BIN_FORMATS = ["pcm", "bin"];
 
 // TODO: Add bundle
-export const BIN_BUNDLE_FORMATS = ["pcmb"];
+//export const BIN_BUNDLE_FORMATS = ["pcmb"];
 export const ZIP_FORMATS = ["zip"];
 
 
@@ -477,7 +478,7 @@ export function imageDataToCanvas(imageData: ImageData) {
 async function importFiles(): Promise<ImportOutput[]> {
     const fileInput = new FileInput();
     const images = ["png", "jpg", "jpeg"];
-    fileInput.setAcceptType([...images, ...TEXT_FORMATS, ...BIN_FORMATS]);
+    fileInput.setAcceptType([...images, ...TEXT_FORMATS, ...BIN_FORMATS, ...ZIP_FORMATS]);
     fileInput.allowMultiple(true);
     const files = await fileInput.show();
     const filteredFiles = [...files].filter(e => e);
@@ -489,6 +490,24 @@ async function importFiles(): Promise<ImportOutput[]> {
 
     if (imagesFiles.length > 1) {
         throw new Error("Only one image files allowed to be imported at the time");
+    }
+
+    const zips = filteredFiles.filter(e => ZIP_FORMATS.some(z => e.name.toLocaleLowerCase().endsWith(z)));
+
+
+    for (const zip of zips) {
+        const index = filteredFiles.indexOf(zip);
+        filteredFiles.splice(index, 1);
+
+        const data = await JSZip.loadAsync(zip);
+        for (const fileName of Object.keys(data.files)) {
+            const file = fileName.split("/");
+            const actualName = file[file.length - 1];
+            if ([ ...TEXT_FORMATS, ...BIN_FORMATS].some(e => actualName.toLowerCase().endsWith(e))) {
+                const blob = await data.files[fileName].async("blob"); // or "text", "arraybuffer"
+                filteredFiles.push(new File([blob], fileName));
+            }
+        }
     }
 
     const output: ImportOutput[] = [];
