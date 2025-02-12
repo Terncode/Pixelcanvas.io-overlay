@@ -1,6 +1,6 @@
 import { clone, isInteger } from "lodash";
 import { MuralEx, MuralOld, MuralStatus, RGB } from "../interfaces";
-import { fetchCombineTiledImage } from "./canvashot";
+import { fetchCombineTiledImage } from "./canvasShot";
 import { Mural } from "./mural";
 
 export const CHUNK_SIZE = 512;

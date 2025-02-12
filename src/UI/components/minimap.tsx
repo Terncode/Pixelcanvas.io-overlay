@@ -6,7 +6,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import styled from "styled-components";
-import { createCanvas, drawPixelsOntoCanvas } from "../../lib/utils";
 import { Palette } from "../../lib/palette";
 import { clamp} from "lodash";
 import { Store } from "../../lib/store";

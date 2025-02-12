@@ -10,7 +10,7 @@ import { Palette } from "../../lib/palette";
 import { importArtWorks } from "../importMural";
 import { Popup } from "./Popup";
 import { Storage } from "../../lib/storage";
-import { takeCanvasShot } from "../../lib/canvashot";
+import { takeCanvasShot } from "../../lib/canvasShot";
 
 const Container = styled.div`
 
