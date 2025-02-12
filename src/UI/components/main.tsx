@@ -11,6 +11,7 @@ import { debounce } from "lodash";
 import { TC_LOGO } from "../../constants";
 import  styled from "styled-components";
 import { MuralEx } from "../../interfaces";
+import { PieCharts } from "./pixelCharts";
 
 const Img = styled.img`
   width: 25px;
@@ -35,6 +36,7 @@ interface Props {
 interface State extends StoreSettings{
     selected?: MuralEx;
     overlays: number[];
+    showCharts: boolean;
     phantomOverlay: number;
     overlayModify?: OverlayReturn;
 }
@@ -46,6 +48,7 @@ export class Main extends React.Component<Props, State> {
     constructor(props: Props) {
         super(props);
         this.state = { 
+            showCharts: false,
             overlays: [],
             phantomOverlay: -1,
             opacity: 50,
@@ -106,8 +109,14 @@ export class Main extends React.Component<Props, State> {
 
     render() {
         return <>
-            <MovableWindow title={this.title()} storage={this.props.storage} storageKey="main"  >
+        {this.state.showCharts ? 
+        <MovableWindow title={"Pixel chart"} storage={this.props.storage} storageKey="charts">
+            <PieCharts palette={this.props.palette} store={this.props.store}/>    
+        </MovableWindow>
+        : null}
+            <MovableWindow title={this.title()} storage={this.props.storage} storageKey="main">
                 <Menu 
+                showChart={() => this.setState({showCharts: !this.state.showCharts})}
                 onOpacityChange={this.opacityChange}
                 cords={this.props.cords}
                 store={this.props.store}

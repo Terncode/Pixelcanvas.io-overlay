@@ -98,7 +98,7 @@ export async function importArtWorks(
             const pixels = await imageToMural(img, palette);
             const mural = await new Promise<Mural>((resolve, reject)=> {
                 store.setOverlayModify({
-                    pixels,
+                    mural,
                     muralObj: {
                         name: img.alt,
                         x: Math.floor(cords.ux - (img.width / 2)),

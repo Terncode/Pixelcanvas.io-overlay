@@ -14,12 +14,12 @@ async function main() {
     const palette = new Palette();
     while(!palette.init()) { await waitForDraw();}
     const storage = new Storage(ENVIRONMENT === "browser-extension");
-    const pixelPlaced = PixelPlaced.create(storage);
     const store = new Store(storage, palette); 
     await store.load();
+    const pixelPlaced = PixelPlaced.create(store);
     const coordinates = new Coordinates();
     await coordinates.init();
-
+    
     createUI(store,storage, coordinates, palette, pixelPlaced);
 
     console.log(

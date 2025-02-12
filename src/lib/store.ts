@@ -16,6 +16,7 @@ export enum StoreEvents {
     MuralSelect,
     MuralOverlay,
     MuralPhantomOverlay,
+    PixelLog,
     Any,
 }
 
@@ -25,23 +26,75 @@ export interface OverlayReturn {
     cb: (name: string, x: number, y: number, confirm?: boolean) => void; 
 }
 
+export interface PixelLog {
+    timestamp: string;
+    x: number;
+    y: number;
+    color: number;
+}
+
+export interface PixelLogEx extends PixelLog {
+    id: number;
+}
+
 export class Store implements LoadUnload {
     private readonly STORAGE_KEY_MURAL = "_murals";
     private readonly STORAGE_KEY_SELECTED = "_mural";
+    private readonly STORAGE_KEY_LOG_STORE = "records";
+    private readonly STORAGE_KEY_PIXEL_LOG = "_pixel-log";
     private _murals: MuralEx[] = [];
     private _selected?: MuralEx;
     private emitter = new BasicEventEmitter();
     private _overlayIndices: number[] = [];
     private _phantomOverlay = -1;
     private _overlayModify?: OverlayReturn;
+    private dbLog?: IDBDatabase;
     private db = localforage.createInstance({
         name: "pixel-canvas-overlay"
-      });
-    
+    });
     constructor(private storage: Storage, private palette: Palette) {}
 
     async load() {
-        console.log("loaded");
+        globalThis.store = this;
+        const pixelCanvasLog = "pixel-canvas-log";
+        const logDb = indexedDB.open(pixelCanvasLog, 1);
+        
+        logDb.addEventListener("upgradeneeded", event => {
+            if (event) {
+                const db = (event?.target as any).result;
+                const store = db
+                    .createObjectStore(this.STORAGE_KEY_LOG_STORE, 
+                        { keyPath: "id", autoIncrement: true }
+                    );
+                store.createIndex("by_timestamp", "timestamp");
+                store.createIndex("by_color", "color");
+            }
+        });
+
+        this.dbLog = await new Promise<IDBDatabase | undefined>((resolve, reject) => {
+            logDb.addEventListener("success", event => {
+                const db = (event.target as any)?.result as IDBDatabase;
+                if (db) {
+                    resolve(db);
+                } else {
+                    reject(new Error("IndexDB did not return db object"));
+                }
+            }, { once: true });
+            logDb.addEventListener("error", event => {
+                if (confirm(
+                    "Unable to load data. Would you like to continue? Some feature will not work correctly"
+                )) {
+                    indexedDB.deleteDatabase(pixelCanvasLog);
+
+                    resolve(undefined);
+                } else {
+                    reject((event.target as IDBOpenDBRequest).error);
+                }
+            }, { once: true });
+        });
+
+    
+
         this._murals  = [];
         const rawMurals = await this.db.getItem<Uint8Array[]>(this.STORAGE_KEY_MURAL) || [];
         
@@ -77,6 +130,83 @@ export class Store implements LoadUnload {
             }
         }
     }
+    addPixelLog(x: number, y: number, color: number) {
+        const timestamp = new Date().toISOString();
+        const data: PixelLog = {
+            timestamp,
+            color,
+            x,
+            y
+        };
+
+        return new Promise<IDBValidKey | null>((resolve, reject) => {
+            if (!this.dbLog) {
+                resolve(null);
+                return;
+            }
+            const tx = this.dbLog.transaction(this.STORAGE_KEY_LOG_STORE, "readwrite");
+            const store = tx.objectStore(this.STORAGE_KEY_LOG_STORE);
+            const request = store.add(data);
+            request.addEventListener("success", () => {
+                resolve(request.result);
+                this.emit(StoreEvents.PixelLog);
+            }, { once: true });
+            request.addEventListener("error", () => {
+                reject(request.error);
+            }, { once: true });
+        });
+    }
+    async fetchPixelsLogByColor(color: number) {
+        if (!this.dbLog) return Promise.resolve([]);
+        const tx = this.dbLog.transaction("records", "readonly");
+        const store = tx.objectStore("records");
+        const index = store.index("by_color");
+        const range = IDBKeyRange.only(color);
+        const request = index.openCursor(range);
+        return this.cursorIterator(request);
+    }
+
+    async fetchPixelsLogByTime(startDate: Date, endDate: Date) {
+        if (!this.dbLog) return Promise.resolve([]);
+        const tx = this.dbLog.transaction(this.STORAGE_KEY_LOG_STORE, "readonly");
+        const store = tx.objectStore(this.STORAGE_KEY_LOG_STORE);
+        const index = store.index("by_timestamp");
+        const range = IDBKeyRange.bound(startDate.toISOString(), endDate.toISOString());
+        const request = index.openCursor(range);
+        return this.cursorIterator(request);
+    }
+
+    async getPixelCount() {
+        if (!this.dbLog) return Promise.resolve(0);
+        const tx = this.dbLog.transaction(this.STORAGE_KEY_LOG_STORE, "readonly");
+        const store = tx.objectStore(this.STORAGE_KEY_LOG_STORE);
+        
+        return new Promise<number>((resolve, reject) => {
+            const request = store.count();
+            request.addEventListener("success", () => {
+                resolve(request.result);
+            }, { once: true });
+            request.addEventListener("error", () => {
+                reject(request.error);
+            }, { once: true });
+        });
+    }
+    private cursorIterator(request: IDBRequest<IDBCursorWithValue | null>) {
+        const results: PixelLogEx[] = [];
+        return new Promise<PixelLogEx[]>((resolve) => {
+            request.addEventListener("success", event => {
+                const cursor = (event.target as IDBRequest).result;
+                if (cursor) {
+                    results.push(cursor.value);
+                    cursor.continue();
+                } else {
+                    resolve(results);
+                }
+    
+            });
+        });
+    }
+
     updateMural(_mural: Mural) {
         this.save();
         this.emit(StoreEvents.MuralUpdated);
@@ -90,7 +220,6 @@ export class Store implements LoadUnload {
         this.emit(StoreEvents.Any);
         this.save();
     }
-
     remove(mural: MuralEx) {
         this._overlayIndices = [];
         this._overlayModify = undefined;

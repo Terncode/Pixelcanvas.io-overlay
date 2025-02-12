@@ -1,4 +1,4 @@
-import { faCamera, faCaretDown, faCaretUp, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faCamera, faCaretDown, faCaretUp, faPieChart, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 import styled from "styled-components";
@@ -76,6 +76,7 @@ interface Props {
     storage: Storage;
     opacity: number;
     collapsed: boolean;
+    showChart: () => void;
     onOpacityChange: (n: number) => void;
     onCollapsedChanged: (b: boolean) => void;
 }
@@ -130,13 +131,30 @@ export class Menu extends React.Component<Props, State> {
         this.setState({takingCanvasShot: false});
     };
     render() {
-        return <Container>
+        return<Container>
             <Flex>
-            <Btn onClick={this.screenshot} disabled={this.state.takingCanvasShot || !this.state.canvasShotAvailable} title="Screenshot"><FontAwesomeIcon icon={ faCamera } /></Btn>
-            <Btn onClick={this.import} title="Import"><FontAwesomeIcon icon={ faUpload } /></Btn>
+            <Btn 
+                onClick={this.screenshot}
+                disabled={this.state.takingCanvasShot || !this.state.canvasShotAvailable} 
+                title="Screenshot">
+                <FontAwesomeIcon icon={ faCamera } />
+            </Btn>
+            <Btn 
+                onClick={this.import}
+                title="Import">
+                    <FontAwesomeIcon icon={ faUpload } />
+                </Btn>
+            <Btn 
+                onClick={() => this.props.showChart()}
+                title="Pixels graph">
+                    <FontAwesomeIcon icon={ faPieChart } />
+            </Btn>
                 <InputRange type="range" min={0} max={100} value={this.props.opacity} onInput={this.inputElement} />
                 <PercentageDiv>{this.props.opacity}%</PercentageDiv>
-                <Btn onClick={() => this.props.onCollapsedChanged(!this.props.collapsed)}><FontAwesomeIcon icon={ this.props.collapsed ? faCaretDown : faCaretUp } /></Btn>
+            <Btn 
+                onClick={() => this.props.onCollapsedChanged(!this.props.collapsed)}>
+                    <FontAwesomeIcon icon={ this.props.collapsed ? faCaretDown : faCaretUp } />
+            </Btn>
             </Flex>
             {this.props.collapsed ? null : <MuralList store={this.props.store} palette={this.props.palette} cords={this.props.cords}/> }
         </Container>;

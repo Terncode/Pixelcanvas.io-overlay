@@ -1,13 +1,16 @@
 import { INJECT_SCRIPT_PIXEL_OBSERVER } from "../constants";
 import { BasicEventEmitter } from "./eventEmitter";
-import { Storage } from "./storage";
+import { Store } from "./store";
 
+interface Pixel {
+    x: number;
+    y: number;
+    color: number;
+}
 
-export class PixelPlaced  {
-    private emitter = new BasicEventEmitter();
+export class PixelPlaced {
     private static instance: PixelPlaced;
-    private readonly storageKey = "__pixelsPlaced";
-    private constructor(private storage: Storage) {
+    private constructor(public readonly store: Store) {
         // The website is logging pixels as object onto pixelsPlaced onto console with .log. 
         // With extension we need to cross 2 worlds. Adding artificial api to document
 
@@ -26,28 +29,28 @@ export class PixelPlaced  {
         }
     
         document.body.appendChild(api);
-        (document as any).addEventListener("__pixelsPlaced", (event: CustomEvent<number>) => {
-            if (typeof event.detail === "number") {
-                this.storage.setItem(this.storageKey, event.detail);
-                this.emitter.emit(0, event.detail);
+        (document as any)
+            .addEventListener("__pixelsPlaced", (event: CustomEvent<Pixel>) => {
+                const body = event.detail;
+                console.log(body);
+                if (typeof body === "object" && "x" in body && "y" in body && "color" in body
+                    && typeof body.color === "number" && typeof body.x === "number" 
+                    && typeof body.y === "number"
+                ) {
+                const data = event.detail;
+                this.store.addPixelLog(data.x, data.y, data.color);
             }
         });
     }
 
-    static create(storage: Storage) {
+    static create(store: Store) {
         if (!this.instance) {
-            this.instance = new PixelPlaced(storage);
+            this.instance = new PixelPlaced(store);
         }
         return this.instance;
     }
-
-    on(fn: (count: number) => void) {
-        this.emitter.on(0, fn);
+    getCount() {
+        return this.store.getPixelCount();
     }
-    off(fn: (count: number) => void) {
-        this.emitter.off(0, fn);
-    }
-    get count() {
-        return this.storage.getItem(this.storageKey);
-    }
+    
 }

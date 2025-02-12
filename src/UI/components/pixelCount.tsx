@@ -4,6 +4,7 @@ import styled from "styled-components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSquare } from "@fortawesome/free-solid-svg-icons";
 import { formatNumber } from "../../lib/utils";
+import { StoreEvents } from "../../lib/store";
 
 const CountBox = styled.div<{width: number}>`
     position: fixed;
@@ -48,20 +49,16 @@ export class PixelCount extends React.Component<Props, State> {
         };
     }
     componentDidMount() {
-       this.props.pixelCount.count.then(countMaybe => {
-        if (typeof countMaybe === "number") {
-            this.updateCount(countMaybe);
-        }
-       });
-       this.props.pixelCount.on(this.updateCount);
-       window.addEventListener("resize", this.onResize);
+        this.updateCount();
+        this.props.pixelCount.store.on(StoreEvents.PixelLog, this.updateCount);
+        window.addEventListener("resize", this.onResize);
     }
     componentWillUnmount() {
-        this.props.pixelCount.on(this.updateCount);
+        this.props.pixelCount.store.off(StoreEvents.PixelLog, this.updateCount);
         window.removeEventListener("resize", this.onResize);
     }
-    updateCount = (count: number) => {
-        this.setState({count});
+    updateCount = async () => {
+        this.setState({count: await this.props.pixelCount.getCount()});
     };
     onResize = () => {
         this.setState({ width: window.innerWidth });
