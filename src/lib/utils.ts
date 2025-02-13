@@ -224,13 +224,13 @@ export function canvasToImageData(canvas: HTMLCanvasElement) {
 }
 
 export function flatQuantizeImageData(imageData: ImageData, palette: RGB[]) {
+    const indexColor = createClosestIndexColor(palette);
     for (let i = 0; i < imageData.data.length; i += 4) {
         const r = imageData.data[i + 0] ?? 0;
         const g = imageData.data[i + 1] ?? 0;
         const b = imageData.data[i + 2] ?? 0;
         const a = imageData.data[i + 3] ?? 0;
-        const obj = rgb(r, g, b);
-        const index = findClosestIndexColor(obj, palette);
+        const index = indexColor(r, g, b);
         const color = palette[index];
         if (!color) throw new Error(`Unknown color index ${index}`);
         imageData.data[i + 0] = color.r;
@@ -273,6 +273,7 @@ export async function getPixelStatusMural(mural: Mural, palette: RGB[]): Promise
 export function imageDataToPaletteIndices(imageData: ImageData, palette: RGB[]) {
     const { height, width } = imageData;
     let k = 0;
+    const indexColor = createClosestIndexColor(palette);
     const pixels = new Int8Array(height * width);
     for (let i = 0; i < imageData.data.length; i += 4) {
         const r = imageData.data[i + 0] ?? 0;
@@ -282,7 +283,7 @@ export function imageDataToPaletteIndices(imageData: ImageData, palette: RGB[]) 
         if (a < 25) {
             pixels[k++] = -1;
         } else {
-            const index = findClosestFormArray(rgb(r, g, b), palette);
+            const index = indexColor(r, g, b);
             pixels[k++] = index;
         }
     }
@@ -378,6 +379,24 @@ export function createMuralExtended(mural: Mural, palette: string[]): MuralEx {
         mural,
         pixelCount: pixels,
         ref: canvas
+    };
+}
+
+export function createClosestIndexColor(palette: RGB[]) {
+    const scores = new Uint16Array(palette.length);
+    let lowest = Number.MAX_SAFE_INTEGER;
+    return (r: number, g: number, b: number) => {
+        lowest = Number.MAX_SAFE_INTEGER;
+        for (let i = 0; i < palette.length; i++) {
+            const rgb = palette[i];
+            const rr = getColorScore(r, rgb.r);
+            const gg = getColorScore(g, rgb.g);
+            const bb = getColorScore(b, rgb.b);
+            const value = rr + gg + bb;
+            lowest = lowest < value ? lowest : value;
+            scores[i] = value;        
+        }
+        return scores.indexOf(lowest);
     };
 }
 

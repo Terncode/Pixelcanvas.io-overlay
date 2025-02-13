@@ -1,7 +1,7 @@
 
 import React from "react";
 import { ImportOutput, MuralOld, RGB } from "../interfaces";
-import { canvasToImageData, convertOldMuralToNewMural, createMuralExtended, getColorScore, getExtension,
+import { canvasToImageData, convertOldMuralToNewMural, createClosestIndexColor, createMuralExtended, getColorScore, getExtension,
     imageDataToPaletteIndices, imageToCanvas, loadImageSource, processNumberEvent,
     readAsArrayBuffer,
     readAsDataUrl, readAsString, resize, rgb } from "../lib/utils";
@@ -440,13 +440,13 @@ function quantizeImage(
 }
 
 export function flatQuantizeImageData(imageData: ImageData, palette: Palette) {
+    const indexColor = createClosestIndexColor(palette.palette);
     for (let i = 0; i < imageData.data.length; i += 4) {
         const r = imageData.data[i + 0] ?? 0;
         const g = imageData.data[i + 1] ?? 0;
         const b = imageData.data[i + 2] ?? 0;
         const a = imageData.data[i + 3] ?? 0;
-        const obj = rgb(r, g, b);
-        const index = findClosestIndexColor(obj, palette);
+        const index = indexColor(r, g, b);
         const color = palette.palette[index];
         if (!color) throw new Error(`Unknown color index ${index}`);
         imageData.data[i + 0] = color.r;
@@ -454,20 +454,6 @@ export function flatQuantizeImageData(imageData: ImageData, palette: Palette) {
         imageData.data[i + 2] = color.b;
         imageData.data[i + 3] = a;
     }
-}
-
-export function findClosestIndexColor(rgbO: RGB, palette: Palette) {
-    const scores: number[] = [];
-
-    for (const rgb of palette.palette) {
-        const r = getColorScore(rgbO.r, rgb.r);
-        const g = getColorScore(rgbO.g, rgb.g);
-        const b = getColorScore(rgbO.b, rgb.b);
-        scores.push(r + g + b);
-    }
-    const lowest = Math.min(...scores);
-    const index = scores.indexOf(lowest);
-    return index;
 }
 
 export function imageDataToCanvas(imageData: ImageData) {
