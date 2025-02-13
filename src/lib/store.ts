@@ -22,7 +22,7 @@ export enum StoreEvents {
 
 export interface OverlayReturn {
     mural: MuralEx;
-    muralObj?: Partial<Mural>;
+    muralModify?: { name: string, x: number, y: number };
     cb: (name: string, x: number, y: number, confirm?: boolean) => void; 
 }
 

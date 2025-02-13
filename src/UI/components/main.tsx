@@ -146,7 +146,7 @@ export class Main extends React.Component<Props, State> {
                 muralExtended={this.props.store.murals[this.state.phantomOverlay]}
                 /> : null }
             {this.state.overlayModify ? <Overlay 
-                muralObj={this.state.overlayModify.muralObj}
+                muralModifier={this.state.overlayModify.muralModify}
                 opacity={this.state.opacity}
                 storage={this.props.storage}
                 cords={this.props.cords}

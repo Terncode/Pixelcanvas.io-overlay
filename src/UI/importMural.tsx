@@ -1,7 +1,7 @@
 
 import React from "react";
 import { ImportOutput, MuralOld, RGB } from "../interfaces";
-import { canvasToImageData, convertOldMuralToNewMural, getColorScore, getExtension,
+import { canvasToImageData, convertOldMuralToNewMural, createMuralExtended, getColorScore, getExtension,
     imageDataToPaletteIndices, imageToCanvas, loadImageSource, processNumberEvent,
     readAsArrayBuffer,
     readAsDataUrl, readAsString, resize, rgb } from "../lib/utils";
@@ -97,13 +97,17 @@ export async function importArtWorks(
         } else {
             const img = file.data;
             const pixels = await imageToMural(img, palette);
+            const x = Math.floor(cords.ux - (img.width / 2));
+            const y = Math.floor(cords.uy - (img.height / 2));
+            const fakeMural = new Mural(img.alt, x, y, img.width, img.height, pixels);
+            const muralExtended = createMuralExtended(fakeMural, palette.hex);
             const mural = await new Promise<Mural>((resolve, reject)=> {
                 store.setOverlayModify({
-                    mural,
-                    muralObj: {
+                    mural: muralExtended,
+                    muralModify: {
                         name: img.alt,
-                        x: Math.floor(cords.ux - (img.width / 2)),
-                        y: Math.floor(cords.uy - (img.height / 2)),
+                        x,
+                        y,
                     },
                     cb: (name, x, y, confirm) => {
                         if (confirm) {
