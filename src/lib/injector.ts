@@ -66,13 +66,13 @@ export class Injector {
             });
         });
     }
-    on(event: InjectEvents.UrlChange, cb: (pixel: Pixel) => any): this;
+    on(event: InjectEvents.PixelPlaced, cb: (pixel: Pixel) => any): this;
     on(event: InjectEvents.UrlChange, cb: (url: string) => any): this;
     on(event: InjectEvents, cb: any) {
         this.eventEmitter.on(event, cb);
         return this;
     }
-    off(event: InjectEvents.UrlChange, cb: (pixel: Pixel) => any): this;
+    off(event: InjectEvents.PixelPlaced, cb: (pixel: Pixel) => any): this;
     off(event: InjectEvents.UrlChange, cb: (url: string) => any): this;
     off(event: InjectEvents, cb: any) {
         this.eventEmitter.off(event, cb);
