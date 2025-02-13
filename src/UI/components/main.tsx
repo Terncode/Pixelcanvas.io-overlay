@@ -8,10 +8,10 @@ import { MovableWindow } from "./movableWindow";
 import { Minimap } from "./minimap";
 import { Overlay } from "./overlay";
 import { debounce } from "lodash";
-import { TC_LOGO } from "../../constants";
 import  styled from "styled-components";
 import { MuralEx } from "../../interfaces";
 import { PieCharts } from "./pixelCharts";
+import { TC_LOGO } from "../../assets";
 
 const Img = styled.img`
   width: 25px;

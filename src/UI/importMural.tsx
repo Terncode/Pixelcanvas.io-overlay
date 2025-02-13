@@ -1,10 +1,12 @@
 
 import React from "react";
-import { ImportOutput, MuralOld, RGB } from "../interfaces";
-import { canvasToImageData, convertOldMuralToNewMural, createClosestIndexColor, createMuralExtended, getColorScore, getExtension,
+import { ImportOutput, MuralOld } from "../interfaces";
+import {
+    canvasToImageData, convertOldMuralToNewMural,
+    createClosestIndexColor, createMuralExtended, getExtension,
     imageDataToPaletteIndices, imageToCanvas, loadImageSource, processNumberEvent,
     readAsArrayBuffer,
-    readAsDataUrl, readAsString, resize, rgb } from "../lib/utils";
+    readAsDataUrl, readAsString, resize } from "../lib/utils";
 import styled from "styled-components";
 import { Popup } from "./components/Popup";
 import RgbQuant, { DitheringKernel, RGBQuantOptions } from "rgbquant";

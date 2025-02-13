@@ -5,8 +5,8 @@ import { createUI } from "./UI/ui";
 import { waitForDraw } from "./lib/utils";
 import { Storage } from "./lib/storage";
 import { Store  } from "./lib/store";
-import { PixelPlaced } from "./lib/pixelPlaced";
 import process from "process";
+import { Injector } from "./lib/injector";
 
 async function main() {
     globalThis.process = process;
@@ -16,11 +16,12 @@ async function main() {
     const storage = new Storage(ENVIRONMENT === "browser-extension");
     const store = new Store(storage, palette); 
     await store.load();
-    const pixelPlaced = PixelPlaced.create(store);
+    const injector = new Injector(store);
+    await injector.inject();
     const coordinates = new Coordinates();
     await coordinates.init();
     
-    createUI(store,storage, coordinates, palette, pixelPlaced);
+    createUI(store,storage, coordinates, palette);
 
     console.log(
         "%cOverlay by 0xa663", 

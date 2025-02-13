@@ -5,14 +5,13 @@ import { Coordinates } from "../lib/coordinates";
 import { Storage } from "../lib/storage";
 import { Main } from "./components/main";
 import { createRoot } from "react-dom/client";
-import { PixelPlaced } from "../lib/pixelPlaced";
 import { PixelCount } from "./components/pixelCount";
 
 export function createUI(
-    store: Store, storage: Storage, cords: Coordinates, palette: Palette, pixels: PixelPlaced
+    store: Store, storage: Storage, cords: Coordinates, palette: Palette
 ) {
     const unmounts = [
-        appendWindow(<PixelCount pixelCount={pixels} />),
+        appendWindow(<PixelCount store={store} />),
         appendWindow(<Main cords={cords} store={store} storage={storage} palette={palette}/>),
     ]; 
     return () => {

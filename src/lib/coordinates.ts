@@ -1,5 +1,6 @@
+import { CHUNK_SIZE } from "../constants";
 import { Listener, BasicEventEmitter } from "./eventEmitter";
-import { CHUNK_SIZE, waitForDraw } from "./utils";
+import { waitForDraw } from "./utils";
 
 export enum CordType {
   Div,

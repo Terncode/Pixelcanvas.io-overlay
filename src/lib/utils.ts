@@ -2,8 +2,7 @@ import { clone, isInteger } from "lodash";
 import { MuralEx, MuralOld, MuralStatus, RGB } from "../interfaces";
 import { fetchCombineTiledImage } from "./canvasShot";
 import { Mural } from "./mural";
-
-export const CHUNK_SIZE = 512;
+import { CHUNK_SIZE } from "../constants";
 
 export function pushUnique<T>(items: T[], item: T) {
     const index = items.indexOf(item);

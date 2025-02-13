@@ -1,10 +1,9 @@
 import React from "react";
-import { PixelPlaced } from "../../lib/pixelPlaced";
 import styled from "styled-components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSquare } from "@fortawesome/free-solid-svg-icons";
 import { formatNumber } from "../../lib/utils";
-import { StoreEvents } from "../../lib/store";
+import { Store, StoreEvents } from "../../lib/store";
 
 const CountBox = styled.div<{width: number}>`
     position: fixed;
@@ -31,7 +30,7 @@ const Icon = styled.span`
 `;
 
 interface Props {
-    pixelCount: PixelPlaced;
+    store: Store;
 }
 
 interface State {
@@ -50,15 +49,15 @@ export class PixelCount extends React.Component<Props, State> {
     }
     componentDidMount() {
         this.updateCount();
-        this.props.pixelCount.store.on(StoreEvents.PixelLog, this.updateCount);
+        this.props.store.on(StoreEvents.PixelLog, this.updateCount);
         window.addEventListener("resize", this.onResize);
     }
     componentWillUnmount() {
-        this.props.pixelCount.store.off(StoreEvents.PixelLog, this.updateCount);
+        this.props.store.off(StoreEvents.PixelLog, this.updateCount);
         window.removeEventListener("resize", this.onResize);
     }
     updateCount = async () => {
-        this.setState({count: await this.props.pixelCount.getCount()});
+        this.setState({count: await this.props.store.getPixelCount()});
     };
     onResize = () => {
         this.setState({ width: window.innerWidth });

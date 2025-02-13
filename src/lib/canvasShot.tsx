@@ -1,9 +1,10 @@
 import saveAs from "file-saver";
-import { createCanvas, CHUNK_SIZE, fetchTile } from "./utils";
+import { createCanvas, fetchTile } from "./utils";
 import { Coordinates } from "./coordinates";
 import { Rect } from "../interfaces";
 import { Popup } from "../UI/components/Popup";
 import React from "react";
+import { CHUNK_SIZE } from "../constants";
 
 export function getSelectionArea() {
     return new Promise<Rect>(resolve => {
