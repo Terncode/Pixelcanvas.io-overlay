@@ -18,7 +18,7 @@ async function main() {
     await store.load();
     const injector = new Injector(store);
     await injector.inject();
-    const coordinates = new Coordinates();
+    const coordinates = new Coordinates(injector);
     await coordinates.init();
     
     createUI(store,storage, coordinates, palette);

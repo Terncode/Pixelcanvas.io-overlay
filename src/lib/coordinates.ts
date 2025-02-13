@@ -1,5 +1,6 @@
 import { CHUNK_SIZE } from "../constants";
 import { Listener, BasicEventEmitter } from "./eventEmitter";
+import { InjectEvents, Injector } from "./injector";
 import { waitForDraw } from "./utils";
 
 export enum CordType {
@@ -10,6 +11,7 @@ export enum CordType {
 export class Coordinates {
     private cords: HTMLDivElement;
     private emitter = new BasicEventEmitter();
+    private observer: MutationObserver;
     private _x = 0;
     private _y = 0;
     private frame: number;
@@ -17,15 +19,65 @@ export class Coordinates {
     private _ux = 0;
     private _uy = 0;
     private _uScale = 0;
+    private down?: number[];
     //div: HTMLDivElement;
-    constructor() {
-        // this.div = document.createElement("div");
-        // this.div.style.position = "fixed";
-        // this.div.style.backgroundColor = "orange";
-        // document.body.appendChild(this.div);
-        // this.div.style.opacity = "0.75";
-        // this.div.style.zIndex = "10px";
-        // this.div.style.pointerEvents = "none";
+    constructor(injector: Injector) {
+        injector.on(InjectEvents.UrlChange, url => {
+            this.onUrlCordsUpdate(url);
+        });
+        this.onUrlCordsUpdate();
+
+        window.addEventListener("touchstart", (event) => {
+            if (event.target instanceof HTMLCanvasElement && event.touches.length === 1) {
+                this.down = [event.touches[0].clientX, event.touches[0].clientY, this.ux, this.uy];
+            }
+        });
+        window.addEventListener("touchmove", event => {
+            if (this.down && event.touches.length === 1) {
+                const mx = Math.round((this.down[0] - event.touches[0].clientX) / Math.pow(2, this._uScale));
+                const my = Math.round((this.down[1] - event.touches[0].clientY) / Math.pow(2, this._uScale));
+                const ux = this._ux;
+                const uy = this._uy;
+                this._ux = this.down[2] + mx,
+                this._uy = this.down[3] + my;
+                if (ux !== this._ux || uy !== this._uy) {
+                    this.emitter.emit(CordType.Url, this._ux, this._uy, this._uScale);
+                }
+            }
+        });
+        window.addEventListener("touchend", () => {
+            this.down = undefined;
+        });
+        window.addEventListener("mousedown", event => {
+            if (event.target instanceof HTMLCanvasElement) {
+                this.down = [event.x, event.y, this.ux, this.uy];
+            }
+        });
+        window.addEventListener("mousemove", event => {
+            if (this.down) {
+                const mx = Math.round((this.down[0] - event.x) / Math.pow(2, this._uScale));
+                const my = Math.round((this.down[1] - event.y) / Math.pow(2, this._uScale));
+                const ux = this._ux;
+                const uy = this._uy;
+                this._ux = this.down[2] + mx,
+                this._uy = this.down[3] + my;
+                if (ux !== this._ux || uy !== this._uy) {
+                    this.emitter.emit(CordType.Url, this._ux, this._uy, this._uScale);
+                }
+            }
+        });
+        window.addEventListener("mouseup", () => {
+            this.down = undefined;
+        });
+
+        // window.addEventListener("wheel" , event => {
+        //     const s = this._uScale;
+        //     if (event.deltaY > 0) {
+        //         this._uScale = s / 2;
+        //     } else {
+        //         this._uScale = s * 2;
+        //     }
+        // }, true);
     }
 
     on(event: CordType, listener: Listener<[number, number, number]>) {
@@ -41,7 +93,14 @@ export class Coordinates {
             for (const cord of cords) {
                 if (cord.children.length === 0) {
                     this.cords = cord;
-                    this.frame = requestAnimationFrame(this.observe);
+                    this.observer = new MutationObserver(() => {
+                        this.updateDivCords();
+                    });
+                    this.observer.observe(cord, {
+                        characterData: true,
+                        subtree: true,
+                    });
+                    break;
                 }
             }
             await waitForDraw();
@@ -49,8 +108,8 @@ export class Coordinates {
     }
 
     stop() {
-        if (this.frame) {
-            cancelAnimationFrame(this.frame);
+        if (this.observer) {
+            this.observer.disconnect();
         }
     }
  
@@ -116,7 +175,6 @@ export class Coordinates {
     screenToGrid(sx: number, sy: number) {
         const c = this.centerCanvas;
         if (!c) return null;
-        this.getCordsFromUrl();
         const chunkX = Math.floor(this.ux / CHUNK_SIZE) * CHUNK_SIZE;
         const chunkY = Math.floor(this.uy / CHUNK_SIZE) * CHUNK_SIZE;
         const xx = ((sx - c.bounds.left) / this.pixelSize) + chunkX;
@@ -127,7 +185,6 @@ export class Coordinates {
     gridToScreen(gridX: number, gridY: number) {
         const c = this.centerCanvas;
         if (!c) return null;
-    
         const chunkX = Math.floor(this.ux / CHUNK_SIZE) * CHUNK_SIZE;
         const chunkY = Math.floor(this.uy / CHUNK_SIZE) * CHUNK_SIZE;
         const screenX = (gridX - chunkX);
@@ -138,9 +195,9 @@ export class Coordinates {
         return { x, y };
     }
 
-    getCordsFromUrl() {
+    updateURLcords(url?: string) {
         const pathNames = location.pathname.split("/").filter(e => e);
-        const cordsRaw = pathNames[0];
+        const cordsRaw = url || pathNames[0];
         if (cordsRaw) {
             const cordsMatch = cordsRaw.match(/-?\d+/g);
             if (cordsMatch) {
@@ -151,7 +208,6 @@ export class Coordinates {
                     this._uScale = cords[2];
                     return cords;
                 }
-                console.log(cordsMatch);
             }
         }
         return null;
@@ -163,7 +219,7 @@ export class Coordinates {
         this._y = arr[1];
     }
 
-    observe = () => {
+    updateDivCords() {
         const x = this._x;
         const y = this._y;
         this.parse();
@@ -171,17 +227,18 @@ export class Coordinates {
         if (x !== this._x || y !== this._y) {
             this.emitter.emit(CordType.Div, this._x, this._y);
         }
-
+    }
+    onUrlCordsUpdate(url?: string) {
         const ux = this._ux;
         const uy = this._uy;
         const uScale = this._uScale;
-        this.getCordsFromUrl();
+        this.updateURLcords(url);
+        this.down = undefined;
         if (ux !== this._ux || uy !== this._uy || uScale !== this._uScale) {
             this.emitter.emit(CordType.Url, this._ux, this._uy, this._uScale);
         }
+    }
 
-        this.frame = requestAnimationFrame(this.observe);
-    };
     get x() {
         return this._x;
     }
@@ -197,5 +254,8 @@ export class Coordinates {
     }
     get uScale() {
         return this._uScale;
+    }
+    get dragging() {
+        return !!this.down;
     }
 }

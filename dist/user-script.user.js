@@ -53768,18 +53768,117 @@
     }
   };
 
+  // src/lib/injector.ts
+  var Injector = class {
+    constructor(store) {
+      this.store = store;
+    }
+    eventEmitter = new BasicEventEmitter();
+    inject() {
+      const api2 = document.createElement("script");
+      api2.addEventListener("load", () => {
+        document.body.removeChild(api2);
+      }, { once: true });
+      api2.addEventListener("error", (error) => {
+        console.error(error);
+      });
+      return new Promise((resolve, reject) => {
+        const d2 = document;
+        api2.addEventListener("error", (error) => {
+          reject(error.error);
+        }, { once: true });
+        d2.addEventListener(EVENT_CROSS_WORLD_INJECTED, () => {
+          resolve();
+        }, { once: true });
+        if (false) {
+          api2.src = chrome.runtime.getURL("/assets/scripts/inject.js");
+        } else {
+          api2.textContent = INJECT_SCRIPT_PIXEL_OBSERVER;
+        }
+        document.body.appendChild(api2);
+        d2.addEventListener(EVENT_CROSS_WORLD_PIXEL_PLACED, (event) => {
+          const body = event.detail;
+          if (typeof body === "object" && "x" in body && "y" in body && "color" in body && typeof body.color === "number" && typeof body.x === "number" && typeof body.y === "number") {
+            this.store.addPixelLog(body.x, body.y, body.color);
+            this.eventEmitter.emit(1 /* PixelPlaced */, body);
+          }
+        });
+        d2.addEventListener(EVENT_CROSS_WORLD_URL_UPDATE, (event) => {
+          const body = event.detail;
+          if (typeof body === "string") {
+            this.eventEmitter.emit(2 /* UrlChange */, body);
+          }
+        });
+      });
+    }
+    on(event, cb) {
+      this.eventEmitter.on(event, cb);
+      return this;
+    }
+    off(event, cb) {
+      this.eventEmitter.off(event, cb);
+      return this;
+    }
+  };
+
   // src/lib/coordinates.ts
   var Coordinates = class {
     cords;
     emitter = new BasicEventEmitter();
+    observer;
     _x = 0;
     _y = 0;
     frame;
     _ux = 0;
     _uy = 0;
     _uScale = 0;
+    down;
     //div: HTMLDivElement;
-    constructor() {
+    constructor(injector) {
+      injector.on(2 /* UrlChange */, (url) => {
+        this.onUrlCordsUpdate(url);
+      });
+      this.onUrlCordsUpdate();
+      window.addEventListener("touchstart", (event) => {
+        if (event.target instanceof HTMLCanvasElement && event.touches.length === 1) {
+          this.down = [event.touches[0].clientX, event.touches[0].clientY, this.ux, this.uy];
+        }
+      });
+      window.addEventListener("touchmove", (event) => {
+        if (this.down && event.touches.length === 1) {
+          const mx = Math.round((this.down[0] - event.touches[0].clientX) / Math.pow(2, this._uScale));
+          const my = Math.round((this.down[1] - event.touches[0].clientY) / Math.pow(2, this._uScale));
+          const ux = this._ux;
+          const uy = this._uy;
+          this._ux = this.down[2] + mx, this._uy = this.down[3] + my;
+          if (ux !== this._ux || uy !== this._uy) {
+            this.emitter.emit(1 /* Url */, this._ux, this._uy, this._uScale);
+          }
+        }
+      });
+      window.addEventListener("touchend", () => {
+        this.down = void 0;
+      });
+      window.addEventListener("mousedown", (event) => {
+        if (event.target instanceof HTMLCanvasElement) {
+          this.down = [event.x, event.y, this.ux, this.uy];
+        }
+      });
+      window.addEventListener("mousemove", (event) => {
+        if (this.down) {
+          const mx = Math.round((this.down[0] - event.x) / Math.pow(2, this._uScale));
+          const my = Math.round((this.down[1] - event.y) / Math.pow(2, this._uScale));
+          const ux = this._ux;
+          const uy = this._uy;
+          this._ux = this.down[2] + mx, this._uy = this.down[3] + my;
+          if (ux !== this._ux || uy !== this._uy) {
+            this.emitter.emit(1 /* Url */, this._ux, this._uy, this._uScale);
+          }
+        }
+      });
+      window.addEventListener("mouseup", () => {
+        this.down = void 0;
+      });
     }
     on(event, listener3) {
       this.emitter.on(event, listener3);
@@ -53793,15 +53892,22 @@
         for (const cord of cords) {
           if (cord.children.length === 0) {
             this.cords = cord;
-            this.frame = requestAnimationFrame(this.observe);
+            this.observer = new MutationObserver(() => {
+              this.updateDivCords();
+            });
+            this.observer.observe(cord, {
+              characterData: true,
+              subtree: true
+            });
+            break;
           }
         }
         await waitForDraw();
       }
     }
     stop() {
-      if (this.frame) {
-        cancelAnimationFrame(this.frame);
+      if (this.observer) {
+        this.observer.disconnect();
       }
     }
     get centerCanvas() {
@@ -53859,7 +53965,6 @@
       const c3 = this.centerCanvas;
       if (!c3)
         return null;
-      this.getCordsFromUrl();
       const chunkX = Math.floor(this.ux / CHUNK_SIZE) * CHUNK_SIZE;
       const chunkY = Math.floor(this.uy / CHUNK_SIZE) * CHUNK_SIZE;
       const xx = (sx - c3.bounds.left) / this.pixelSize + chunkX;
@@ -53878,9 +53983,9 @@
       const y3 = c3.bounds.top + screenY * this.pixelSize;
       return { x: x3, y: y3 };
     }
-    getCordsFromUrl() {
+    updateURLcords(url) {
       const pathNames = location.pathname.split("/").filter((e) => e);
-      const cordsRaw = pathNames[0];
+      const cordsRaw = url || pathNames[0];
       if (cordsRaw) {
         const cordsMatch = cordsRaw.match(/-?\d+/g);
         if (cordsMatch) {
@@ -53891,7 +53996,6 @@
             this._uScale = cords[2];
             return cords;
           }
-          console.log(cordsMatch);
         }
       }
       return null;
@@ -53901,22 +54005,24 @@
       this._x = arr[0];
       this._y = arr[1];
     }
-    observe = () => {
+    updateDivCords() {
       const x3 = this._x;
       const y3 = this._y;
       this.parse();
       if (x3 !== this._x || y3 !== this._y) {
         this.emitter.emit(0 /* Div */, this._x, this._y);
       }
+    }
+    onUrlCordsUpdate(url) {
       const ux = this._ux;
       const uy = this._uy;
       const uScale = this._uScale;
-      this.getCordsFromUrl();
+      this.updateURLcords(url);
+      this.down = void 0;
       if (ux !== this._ux || uy !== this._uy || uScale !== this._uScale) {
         this.emitter.emit(1 /* Url */, this._ux, this._uy, this._uScale);
       }
-      this.frame = requestAnimationFrame(this.observe);
-    };
+    }
     get x() {
       return this._x;
     }
@@ -53931,6 +54037,9 @@
     }
     get uScale() {
       return this._uScale;
+    }
+    get dragging() {
+      return !!this.down;
     }
   };
 
@@ -58556,7 +58665,7 @@
       this.resize();
       this.ref.current.style.top = this.ref.current.style.left = `0px`;
       this.props.cords.on(1 /* Url */, this.draw);
-      console.log("test");
+      this.props.cords.on(0 /* Div */, this.updateIfMouseDown);
       window.addEventListener("mousemove", this.onMouseMove);
       window.addEventListener("touchmove", this.onTouchMove);
       window.addEventListener("resize", this.resize);
@@ -58570,10 +58679,16 @@
     }
     componentWillUnmount() {
       this.props.cords.off(1 /* Url */, this.draw);
+      this.props.cords.off(0 /* Div */, this.updateIfMouseDown);
       window.removeEventListener("mousemove", this.onMouseMove);
       window.removeEventListener("touchmove", this.onTouchMove);
       window.removeEventListener("resize", this.resize);
     }
+    updateIfMouseDown = () => {
+      if (this.props.cords.dragging) {
+        this.draw();
+      }
+    };
     onMouseMove = (event) => {
       if (event.buttons === 1) {
         this.draw();
@@ -58596,7 +58711,6 @@
     };
     componentDidUpdate(prevProps, prevState) {
       if (prevProps.muralExtended !== this.props.muralExtended) {
-        this._refImage = void 0;
         this.setState({
           x: 0,
           y: 0
@@ -77396,61 +77510,6 @@
 
   // src/index.ts
   var import_process = __toESM(require_browser2());
-
-  // src/lib/injector.ts
-  var Injector = class {
-    constructor(store) {
-      this.store = store;
-    }
-    eventEmitter = new BasicEventEmitter();
-    inject() {
-      const api2 = document.createElement("script");
-      api2.addEventListener("load", () => {
-        document.body.removeChild(api2);
-      }, { once: true });
-      api2.addEventListener("error", (error) => {
-        console.error(error);
-      });
-      return new Promise((resolve, reject) => {
-        const d2 = document;
-        api2.addEventListener("error", (error) => {
-          reject(error.error);
-        }, { once: true });
-        d2.addEventListener(EVENT_CROSS_WORLD_INJECTED, () => {
-          resolve();
-        }, { once: true });
-        if (false) {
-          api2.src = chrome.runtime.getURL("/assets/scripts/inject.js");
-        } else {
-          api2.textContent = INJECT_SCRIPT_PIXEL_OBSERVER;
-        }
-        document.body.appendChild(api2);
-        d2.addEventListener(EVENT_CROSS_WORLD_PIXEL_PLACED, (event) => {
-          const body = event.detail;
-          if (typeof body === "object" && "x" in body && "y" in body && "color" in body && typeof body.color === "number" && typeof body.x === "number" && typeof body.y === "number") {
-            this.store.addPixelLog(body.x, body.y, body.color);
-            this.eventEmitter.emit(1 /* PixelPlaced */, body);
-          }
-        });
-        d2.addEventListener(EVENT_CROSS_WORLD_URL_UPDATE, (event) => {
-          const body = event.detail;
-          if (typeof body === "string") {
-            this.eventEmitter.emit(2 /* UrlChange */, body);
-          }
-        });
-      });
-    }
-    on(event, cb) {
-      this.eventEmitter.on(event, cb);
-      return this;
-    }
-    off(event, cb) {
-      this.eventEmitter.off(event, cb);
-      return this;
-    }
-  };
-
-  // src/index.ts
   async function main() {
     globalThis.process = import_process.default;
     const palette = new Palette();
@@ -77462,7 +77521,7 @@
     await store.load();
     const injector = new Injector(store);
     await injector.inject();
-    const coordinates = new Coordinates();
+    const coordinates = new Coordinates(injector);
     await coordinates.init();
     createUI(store, storage, coordinates, palette);
     console.log(

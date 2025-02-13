@@ -45,9 +45,8 @@ export class Overlay extends React.Component<Props, State> {
         this.resize();
 
         this.ref.current!.style.top = this.ref.current!.style.left = `0px`;
-
         this.props.cords.on(CordType.Url, this.draw);
-        console.log("test");
+        this.props.cords.on(CordType.Div, this.updateIfMouseDown);
         window.addEventListener("mousemove", this.onMouseMove);
         window.addEventListener("touchmove", this.onTouchMove);
         window.addEventListener("resize", this.resize);
@@ -61,11 +60,16 @@ export class Overlay extends React.Component<Props, State> {
     }
     componentWillUnmount() {
         this.props.cords.off(CordType.Url, this.draw);
-        
+        this.props.cords.off(CordType.Div, this.updateIfMouseDown);
         window.removeEventListener("mousemove", this.onMouseMove);
         window.removeEventListener("touchmove", this.onTouchMove);
         window.removeEventListener("resize", this.resize);
     }
+    updateIfMouseDown = () => {
+        if (this.props.cords.dragging) {
+            this.draw();
+        }
+    };
     onMouseMove = (event:  MouseEvent) => {
         if (event.buttons === 1) {
             this.draw();
@@ -91,7 +95,6 @@ export class Overlay extends React.Component<Props, State> {
 
     componentDidUpdate(prevProps: Readonly<Props>, prevState: Readonly<State>) {
         if (prevProps.muralExtended !== this.props.muralExtended) {
-            this._refImage = undefined;
             this.setState({
                 x: 0, y: 0
             });
