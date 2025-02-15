@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pixel canvas overlay
 // @namespace    http://tampermonkey.net/
-// @version      2025-02-14
+// @version      2025-02-16
 // @description  Scripts renders pixelated overlays over the tile map!
 // @author       0xa663, Terncode
 // @match        https://pixelcanvas.io/*
@@ -51560,6 +51560,152 @@
   var EVENT_CROSS_WORLD_URL_UPDATE = "__pc-event-url-update";
   var EVENT_CROSS_WORLD_INJECTED = "__pc-event-injected";
 
+  // src/lib/coordinatesPredictor.ts
+  var CoordinatePredictor = class {
+    constructor(coordinates, predict) {
+      this.coordinates = coordinates;
+      this.predict = predict;
+      coordinates.on(1 /* Url */, (x3, y3, scale) => {
+        if (this.cords) {
+          this.cords[0] = x3;
+          this.cords[1] = y3;
+          this.cords[2] = scale;
+        } else {
+          this.cords = [x3, y3, scale];
+        }
+      });
+    }
+    frame;
+    tileRef;
+    lastX;
+    lastY;
+    lastScale;
+    cords;
+    cordUpdate = (x3, y3, s3) => {
+      this.cords = [x3, y3, s3];
+    };
+    syncCords() {
+      const cords = this.coordinates;
+      this.cordUpdate(cords.ux, cords.uy, cords.uScale);
+    }
+    enable() {
+      if (this.frame)
+        return;
+      this.syncCords();
+      this.coordinates.on(1 /* Url */, this.cordUpdate);
+      this.frame = requestAnimationFrame(this.tick);
+    }
+    disable() {
+      if (this.frame) {
+        this.coordinates.off(1 /* Url */, this.cordUpdate);
+        cancelAnimationFrame(this.frame);
+        this.frame = void 0;
+      }
+    }
+    get enabled() {
+      return !!this.frame;
+    }
+    tick = () => {
+      if (!this.tileRef || !document.body.contains(this.tileRef)) {
+        this.tileRef = [...document.getElementsByTagName("canvas")].find((e) => e.classList.contains("leaflet-tile"));
+        if (this.tileRef) {
+          const rect = this.tileRef?.getBoundingClientRect();
+          if (rect) {
+            this.syncCords();
+            this.lastScale = this.getScale(rect.width);
+            this.lastX = rect?.left;
+            this.lastY = rect?.top;
+          }
+          this.nextFrame();
+          return;
+        }
+      } else {
+        const rect = this.tileRef?.getBoundingClientRect();
+        if (rect) {
+          if (this.lastX != null && this.lastY != null && this.lastScale != null) {
+            const scale = this.getScale(rect.width);
+            const x3 = rect?.left;
+            const y3 = rect?.top;
+            if (x3 !== this.lastX || y3 !== this.lastY || scale != this.lastScale) {
+              const mx = this.lastX - rect?.left;
+              const my = this.lastY - rect?.top;
+              this.lastX = x3;
+              this.lastY = y3;
+              this.lastScale = scale;
+              this.cords[0] += mx / (rect.width / CHUNK_SIZE);
+              this.cords[1] += my / (rect.width / CHUNK_SIZE);
+              this.predict(this.cords[0], this.cords[1], this.cords[2]);
+              this.cords[2] = scale;
+            }
+          }
+        }
+      }
+      this.nextFrame();
+    };
+    nextFrame() {
+      if (this.frame) {
+        this.frame = requestAnimationFrame(this.tick);
+      }
+    }
+    getScale(width) {
+      const scale = width / CHUNK_SIZE;
+      return Math.log(scale) / Math.log(2);
+    }
+    //   private get centerCanvas() {
+    //     const hww = window.innerWidth / 2; 
+    //     const hhw = window.innerHeight / 2;
+    //     const canvasObject = [
+    //         ...document.getElementsByTagName("canvas")]
+    //         .filter(c => c.classList.contains("leaflet-tile"))
+    //         .map(c => {
+    //         const bounds = c.getBoundingClientRect();
+    //         return {
+    //             canvas: c,
+    //             bounds: {
+    //                 width: bounds.width,
+    //                 height: bounds.height,
+    //                 top: bounds.top,
+    //                 bottom: bounds.bottom,
+    //                 left: bounds.left,
+    //                 right: bounds.right,
+    //             },
+    //         };
+    //     }).find(r => hww > r.bounds.left && hww < r.bounds.right && hhw > r.bounds.top && hhw < r.bounds.bottom);
+    //     if (canvasObject) {
+    //         const ratio = canvasObject.canvas.width / CHUNK_SIZE;
+    //         if (ratio === 2) { // scale -1
+    //             const hw = canvasObject.bounds.left + canvasObject.bounds.width / 2;
+    //             const hh = canvasObject.bounds.top + canvasObject.bounds.height / 2;
+    //             const chunkW = CHUNK_SIZE / canvasObject.canvas.width;
+    //             const chunkH = CHUNK_SIZE / canvasObject.canvas.height;
+    //             canvasObject.bounds.width = chunkW;
+    //             canvasObject.bounds.height = chunkH; 
+    //             if (hww <= hw && hhw <= hh) {
+    //                 // top left
+    //             } else if (hww > hw && hhw < hh) {
+    //                 // top right
+    //                 canvasObject.bounds.top += chunkW;
+    //             } else if (hww > hw && hhw > hh) {
+    //                 // bottom left
+    //                 canvasObject.bounds.left += chunkH;
+    //             } else {
+    //                 // bottom left right
+    //                 canvasObject.bounds.left += chunkW;
+    //                 canvasObject.bounds.top += chunkH;
+    //             }  
+    //             canvasObject.bounds.bottom = canvasObject.bounds.top + chunkW;
+    //             canvasObject.bounds.right = canvasObject.bounds.left + chunkH;   
+    //             return null;
+    //         }
+    //         canvasObject.bounds.width /= ratio;
+    //         canvasObject.bounds.height /= ratio; 
+    //         canvasObject.bounds.right = canvasObject.bounds.left + canvasObject.bounds.width;
+    //         canvasObject.bounds.bottom = canvasObject.bounds.bottom + canvasObject.bounds.height;
+    //     }
+    //     return canvasObject;
+    // }
+  };
+
   // src/lib/utils.ts
   var import_lodash = __toESM(require_lodash());
 
@@ -53822,7 +53968,21 @@
   };
 
   // src/lib/coordinates.ts
-  var Coordinates = class {
+  var Coordinates2 = class {
+    //div: HTMLDivElement;
+    constructor(injector, storage) {
+      this.storage = storage;
+      injector.on(2 /* UrlChange */, (url) => {
+        this.onUrlCordsUpdate(url);
+      });
+      this.onUrlCordsUpdate();
+      this.coordinatePredictor = new CoordinatePredictor(this, (x3, y3, scale) => {
+        this._ux = Math.round(x3);
+        this._uy = Math.round(y3);
+        this._uScale = Math.round(scale);
+        this.emitter.emit(2 /* UrlPredict */, x3, y3, scale);
+      });
+    }
     cords;
     emitter = new BasicEventEmitter();
     observer;
@@ -53833,53 +53993,72 @@
     _uy = 0;
     _uScale = 0;
     down;
-    //div: HTMLDivElement;
-    constructor(injector) {
-      injector.on(2 /* UrlChange */, (url) => {
-        this.onUrlCordsUpdate(url);
-      });
-      this.onUrlCordsUpdate();
-      window.addEventListener("touchstart", (event) => {
-        if (event.target instanceof HTMLCanvasElement && event.touches.length === 1) {
-          this.down = [event.touches[0].clientX, event.touches[0].clientY, this.ux, this.uy];
-        }
-      });
-      window.addEventListener("touchmove", (event) => {
-        if (this.down && event.touches.length === 1) {
-          const mx = Math.round((this.down[0] - event.touches[0].clientX) / Math.pow(2, this._uScale));
-          const my = Math.round((this.down[1] - event.touches[0].clientY) / Math.pow(2, this._uScale));
-          const ux = this._ux;
-          const uy = this._uy;
-          this._ux = this.down[2] + mx, this._uy = this.down[3] + my;
-          if (ux !== this._ux || uy !== this._uy) {
-            this.emitter.emit(1 /* Url */, this._ux, this._uy, this._uScale);
-          }
-        }
-      });
-      window.addEventListener("touchend", () => {
-        this.down = void 0;
-      });
-      window.addEventListener("mousedown", (event) => {
-        if (event.target instanceof HTMLCanvasElement) {
-          this.down = [event.x, event.y, this.ux, this.uy];
-        }
-      });
-      window.addEventListener("mousemove", (event) => {
-        if (this.down) {
-          const mx = Math.round((this.down[0] - event.x) / Math.pow(2, this._uScale));
-          const my = Math.round((this.down[1] - event.y) / Math.pow(2, this._uScale));
-          const ux = this._ux;
-          const uy = this._uy;
-          this._ux = this.down[2] + mx, this._uy = this.down[3] + my;
-          if (ux !== this._ux || uy !== this._uy) {
-            this.emitter.emit(1 /* Url */, this._ux, this._uy, this._uScale);
-          }
-        }
-      });
-      window.addEventListener("mouseup", () => {
-        this.down = void 0;
-      });
+    coordinatePredictor;
+    _highPrecision = false;
+    toggleHigherPrecision(value) {
+      if (this._highPrecision === value) {
+        return;
+      }
+      if (value) {
+        this.coordinatePredictor.enable();
+        window.removeEventListener("touchstart", this.touchStart);
+        window.removeEventListener("touchmove", this.touchMove);
+        window.removeEventListener("touchend", this.endMovement);
+        window.removeEventListener("mousedown", this.mouseDown);
+        window.removeEventListener("mousemove", this.mouseMove);
+        window.removeEventListener("mouseup", this.endMovement);
+      } else {
+        this.coordinatePredictor.disable();
+        window.addEventListener("touchstart", this.touchStart);
+        window.addEventListener("touchmove", this.touchMove);
+        window.addEventListener("touchend", this.endMovement);
+        window.addEventListener("mousedown", this.mouseDown);
+        window.addEventListener("mousemove", this.mouseMove);
+        window.addEventListener("mouseup", this.endMovement);
+      }
+      this.storage.toggleHighPrecision(value);
+      this._highPrecision = value;
     }
+    get highPrecision() {
+      return this._highPrecision;
+    }
+    touchStart = (event) => {
+      if (event.target instanceof HTMLCanvasElement && event.touches.length === 1) {
+        this.down = [event.touches[0].clientX, event.touches[0].clientY, this.ux, this.uy];
+      }
+    };
+    touchMove = (event) => {
+      if (this.down && event.touches.length === 1) {
+        const mx = Math.round((this.down[0] - event.touches[0].clientX) / Math.pow(2, this._uScale));
+        const my = Math.round((this.down[1] - event.touches[0].clientY) / Math.pow(2, this._uScale));
+        const ux = this._ux;
+        const uy = this._uy;
+        this._ux = this.down[2] + mx, this._uy = this.down[3] + my;
+        if (ux !== this._ux || uy !== this._uy) {
+          this.emitter.emit(1 /* Url */, this._ux, this._uy, this._uScale);
+        }
+      }
+    };
+    mouseDown = (event) => {
+      if (event.target instanceof HTMLCanvasElement) {
+        this.down = [event.x, event.y, this.ux, this.uy];
+      }
+    };
+    mouseMove = (event) => {
+      if (this.down) {
+        const mx = Math.round((this.down[0] - event.x) / Math.pow(2, this._uScale));
+        const my = Math.round((this.down[1] - event.y) / Math.pow(2, this._uScale));
+        const ux = this._ux;
+        const uy = this._uy;
+        this._ux = this.down[2] + mx, this._uy = this.down[3] + my;
+        if (ux !== this._ux || uy !== this._uy) {
+          this.emitter.emit(1 /* Url */, this._ux, this._uy, this._uScale);
+        }
+      }
+    };
+    endMovement = () => {
+      this.down = void 0;
+    };
     on(event, listener3) {
       this.emitter.on(event, listener3);
     }
@@ -53904,6 +54083,8 @@
         }
         await waitForDraw();
       }
+      const value = await this.storage.enabledHighPrecision();
+      this.toggleHigherPrecision(value);
     }
     stop() {
       if (this.observer) {
@@ -54101,10 +54282,10 @@
       this.storage = storage;
       this.palette = palette;
     }
+    STORAGE_KEY_HIGH_PRECISION = "_high-precision";
     STORAGE_KEY_MURAL = "_murals";
     STORAGE_KEY_SELECTED = "_mural";
     STORAGE_KEY_LOG_STORE = "records";
-    STORAGE_KEY_PIXEL_LOG = "_pixel-log";
     _murals = [];
     _selected;
     emitter = new BasicEventEmitter();
@@ -54333,6 +54514,12 @@
         this.emit(6 /* MuralPhantomOverlay */);
       }
     }
+    async enabledHighPrecision() {
+      return await this.storage.getItem(this.STORAGE_KEY_HIGH_PRECISION) ?? false;
+    }
+    toggleHighPrecision(value) {
+      return this.storage.setItem(this.STORAGE_KEY_HIGH_PRECISION, value);
+    }
     get murals() {
       return this._murals;
     }
@@ -54365,6 +54552,11 @@
     prefix: "fas",
     iconName: "pen-to-square",
     icon: [512, 512, ["edit"], "f044", "M471.6 21.7c-21.9-21.9-57.3-21.9-79.2 0L362.3 51.7l97.9 97.9 30.1-30.1c21.9-21.9 21.9-57.3 0-79.2L471.6 21.7zm-299.2 220c-6.1 6.1-10.8 13.6-13.5 21.9l-29.6 88.8c-2.9 8.6-.6 18.1 5.8 24.6s15.9 8.7 24.6 5.8l88.8-29.6c8.2-2.7 15.7-7.4 21.9-13.5L437.7 172.3 339.7 74.3 172.4 241.7zM96 64C43 64 0 107 0 160V416c0 53 43 96 96 96H352c53 0 96-43 96-96V320c0-17.7-14.3-32-32-32s-32 14.3-32 32v96c0 17.7-14.3 32-32 32H96c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32h96c17.7 0 32-14.3 32-32s-14.3-32-32-32H96z"]
+  };
+  var faImage = {
+    prefix: "fas",
+    iconName: "image",
+    icon: [512, 512, [], "f03e", "M0 96C0 60.7 28.7 32 64 32H448c35.3 0 64 28.7 64 64V416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96zM323.8 202.5c-4.5-6.6-11.9-10.5-19.8-10.5s-15.4 3.9-19.8 10.5l-87 127.6L170.7 297c-4.6-5.7-11.5-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4s12.4 13.6 21.6 13.6h96 32H424c8.9 0 17.1-4.9 21.2-12.8s3.6-17.4-1.4-24.7l-120-176zM112 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z"]
   };
   var faCaretUp = {
     prefix: "fas",
@@ -57967,12 +58159,24 @@
         }
       });
     };
+    get saveFileName() {
+      const mural = this.props.muralExtended.mural;
+      return mural.name.replace(/ /, "_").replace(/[^a-zA-Z0-9-_]/g, "");
+    }
     onExport = async () => {
       const mural = this.props.muralExtended.mural;
       const buffer = await mural.getBuffer();
       const blob = new Blob([buffer], { type: "octet/stream" });
-      const saveName = mural.name.replace(/ /, "_").replace(/[^a-zA-Z0-9-_]/g, "");
-      (0, import_file_saver2.default)(blob, `${saveName}.${BIN_FORMATS[0]}`);
+      (0, import_file_saver2.default)(blob, `${this.saveFileName}.${BIN_FORMATS[0]}`);
+    };
+    onImage = async () => {
+      this.props.muralExtended.ref.toBlob((blob) => {
+        if (blob) {
+          (0, import_file_saver2.default)(blob, `${this.saveFileName}.png`);
+        } else {
+          Popup.alert("Failed to export as PNG");
+        }
+      }, "image/png");
     };
     onDelete = async () => {
       if (await Popup.confirm(`Are you sure you want to remove "${this.props.muralExtended.mural.name}"`)) {
@@ -58045,7 +58249,7 @@
           "Size",
           `${this.props.muralExtended.mural.w}x${this.props.muralExtended.mural.w}`
         ), this.renderInfoLine("Progress", this.renderProgress()))),
-        /* @__PURE__ */ import_react8.default.createElement(Flex, null, this.btn("Preview", faLayerGroup, this.onPreview, this.props.store.hasOverlay(this.props.muralExtended)), this.btn("Modify", faPenToSquare, this.onModify), this.btn("Export", faDownload, this.onExport), this.btn("Delete", faTrash, this.onDelete), /* @__PURE__ */ import_react8.default.createElement(A2, { href: this.link }, "Goto ", /* @__PURE__ */ import_react8.default.createElement(FontAwesomeIcon, { icon: faLocation })))
+        /* @__PURE__ */ import_react8.default.createElement(Flex, null, this.btn("Preview", faLayerGroup, this.onPreview, this.props.store.hasOverlay(this.props.muralExtended)), this.btn("Modify", faPenToSquare, this.onModify), this.btn("Export", faDownload, this.onExport), this.btn("PNG", faImage, this.onImage), this.btn("Delete", faTrash, this.onDelete), /* @__PURE__ */ import_react8.default.createElement(A2, { href: this.link }, "Goto ", /* @__PURE__ */ import_react8.default.createElement(FontAwesomeIcon, { icon: faLocation })))
       );
     }
   };
@@ -58171,7 +58375,8 @@
       super(props);
       this.state = {
         takingCanvasShot: false,
-        canvasShotAvailable: true
+        canvasShotAvailable: true,
+        locationPrecision: props.cords.highPrecision
       };
     }
     componentDidMount() {
@@ -58197,6 +58402,11 @@
     inputElement = (event) => {
       const percentage = parseInt(event.target.value);
       this.props.onOpacityChange(percentage);
+    };
+    togglePrecision = () => {
+      const value = !this.state.locationPrecision;
+      this.setState({ locationPrecision: value });
+      this.props.cords.toggleHigherPrecision(value);
     };
     screenshot = async () => {
       if (this.props.cords.uScale < 0) {
@@ -58228,6 +58438,16 @@
           title: "Pixels graph"
         },
         /* @__PURE__ */ import_react10.default.createElement(FontAwesomeIcon, { icon: faPieChart })
+      ), /* @__PURE__ */ import_react10.default.createElement(
+        Btn2,
+        {
+          title: "Runtime coordinate calculator. Uses more resources",
+          onClick: this.togglePrecision,
+          style: {
+            border: this.state.locationPrecision ? "" : "2px dotted black"
+          }
+        },
+        /* @__PURE__ */ import_react10.default.createElement(FontAwesomeIcon, { icon: faLocationCrosshairs })
       ), /* @__PURE__ */ import_react10.default.createElement(InputRange, { type: "range", min: 0, max: 100, value: this.props.opacity, onInput: this.inputElement }), /* @__PURE__ */ import_react10.default.createElement(PercentageDiv, null, this.props.opacity, "%"), /* @__PURE__ */ import_react10.default.createElement(
         Btn2,
         {
@@ -58665,6 +58885,7 @@
       this.resize();
       this.ref.current.style.top = this.ref.current.style.left = `0px`;
       this.props.cords.on(1 /* Url */, this.draw);
+      this.props.cords.on(2 /* UrlPredict */, this.draw);
       this.props.cords.on(0 /* Div */, this.updateIfMouseDown);
       window.addEventListener("mousemove", this.onMouseMove);
       window.addEventListener("touchmove", this.onTouchMove);
@@ -58679,6 +58900,7 @@
     }
     componentWillUnmount() {
       this.props.cords.off(1 /* Url */, this.draw);
+      this.props.cords.off(2 /* UrlPredict */, this.draw);
       this.props.cords.off(0 /* Div */, this.updateIfMouseDown);
       window.removeEventListener("mousemove", this.onMouseMove);
       window.removeEventListener("touchmove", this.onTouchMove);
@@ -77521,7 +77743,7 @@
     await store.load();
     const injector = new Injector(store);
     await injector.inject();
-    const coordinates = new Coordinates(injector);
+    const coordinates = new Coordinates2(injector, store);
     await coordinates.init();
     createUI(store, storage, coordinates, palette);
     console.log(

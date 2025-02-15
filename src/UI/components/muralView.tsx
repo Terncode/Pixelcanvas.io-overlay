@@ -6,7 +6,7 @@ import { A, Border, Btn, Flex, SELECTED_COLOR } from "../styles";
 import { CanvasToCanvasJSX } from "./canvasToCanvasJSX";
 import { formatNumber, getPixelStatusMural } from "../../lib/utils";
 import { 
-    IconDefinition, faDownload, faLayerGroup, faLocation, faPenToSquare, faRefresh, faTrash 
+    IconDefinition, faDownload, faImage, faLayerGroup, faLocation, faPenToSquare, faRefresh, faTrash 
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Coordinates, CordType } from "../../lib/coordinates";
@@ -211,16 +211,29 @@ export class MuralView extends React.Component<Props, State> {
         //     this.props.store.updateMural(this.props.mural);
         // }
     };
+
+    get saveFileName() {
+        const mural = this.props.muralExtended.mural;
+
+        return  mural.name
+            .replace(/ /, "_")
+            .replace(/[^a-zA-Z0-9-_]/g, "");
+    }
     onExport = async () => {
         const mural = this.props.muralExtended.mural;
         const buffer = await mural.getBuffer();
         const blob = new Blob([buffer], { type: "octet/stream" });
 
-        const saveName = mural.name
-            .replace(/ /, "_")
-            .replace(/[^a-zA-Z0-9-_]/g, "");
-
-        saveAs(blob, `${saveName}.${BIN_FORMATS[0]}`);
+        saveAs(blob, `${this.saveFileName}.${BIN_FORMATS[0]}`);
+    };
+    onImage = async () => {
+        this.props.muralExtended.ref.toBlob(blob => {
+            if (blob) {
+                saveAs(blob, `${this.saveFileName}.png`);
+            } else {
+                Popup.alert("Failed to export as PNG");
+            }
+        }, "image/png");
     };
     onDelete = async () => {
         if (await Popup
@@ -308,6 +321,7 @@ export class MuralView extends React.Component<Props, State> {
                 {this.btn("Preview", faLayerGroup, this.onPreview, this.props.store.hasOverlay(this.props.muralExtended))}
                 {this.btn("Modify", faPenToSquare, this.onModify)}
                 {this.btn("Export", faDownload, this.onExport)}
+                {this.btn("PNG", faImage, this.onImage)}
                 {this.btn("Delete", faTrash, this.onDelete)}
                 <A href={this.link}>Goto <FontAwesomeIcon icon={faLocation}/></A>
             </Flex>
