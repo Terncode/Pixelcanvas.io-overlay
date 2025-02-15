@@ -125,9 +125,6 @@ export class Overlay extends React.Component<Props, State> {
         const canvas = this.ref.current!;
         const scale = Math.pow(2, this.props.cords.uScale);
 
-        // TODO calculate cords differently to be less expensive
-        // TODO also add cache
-        // TODO also profile the thing
         const cords = this.props.cords.gridToScreen(this.x, this.y)!;
         if (!cords) {
             const ctx = canvas.getContext("2d")!;
