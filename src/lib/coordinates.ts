@@ -1,11 +1,14 @@
 import { CHUNK_SIZE } from "../constants";
+import { CoordinatePredictor } from "./coordinatesPredictor";
 import { Listener, BasicEventEmitter } from "./eventEmitter";
 import { InjectEvents, Injector } from "./injector";
+import { Store } from "./store";
 import { waitForDraw } from "./utils";
 
 export enum CordType {
   Div,
-  Url  
+  Url,
+  UrlPredict 
 }
 
 export class Coordinates {
@@ -20,65 +23,89 @@ export class Coordinates {
     private _uy = 0;
     private _uScale = 0;
     private down?: number[];
+    private coordinatePredictor: CoordinatePredictor;
+    private _highPrecision = false;
     //div: HTMLDivElement;
-    constructor(injector: Injector) {
+    constructor(injector: Injector, private storage: Store) {
         injector.on(InjectEvents.UrlChange, url => {
             this.onUrlCordsUpdate(url);
         });
         this.onUrlCordsUpdate();
-
-        window.addEventListener("touchstart", (event) => {
-            if (event.target instanceof HTMLCanvasElement && event.touches.length === 1) {
-                this.down = [event.touches[0].clientX, event.touches[0].clientY, this.ux, this.uy];
-            }
+        this.coordinatePredictor = new CoordinatePredictor(this, (x, y, scale) => {
+            this._ux = Math.round(x);
+            this._uy = Math.round(y);
+            this._uScale = Math.round(scale);
+            this.emitter.emit(CordType.UrlPredict, x, y, scale);
         });
-        window.addEventListener("touchmove", event => {
-            if (this.down && event.touches.length === 1) {
-                const mx = Math.round((this.down[0] - event.touches[0].clientX) / Math.pow(2, this._uScale));
-                const my = Math.round((this.down[1] - event.touches[0].clientY) / Math.pow(2, this._uScale));
-                const ux = this._ux;
-                const uy = this._uy;
-                this._ux = this.down[2] + mx,
-                this._uy = this.down[3] + my;
-                if (ux !== this._ux || uy !== this._uy) {
-                    this.emitter.emit(CordType.Url, this._ux, this._uy, this._uScale);
-                }
-            }
-        });
-        window.addEventListener("touchend", () => {
-            this.down = undefined;
-        });
-        window.addEventListener("mousedown", event => {
-            if (event.target instanceof HTMLCanvasElement) {
-                this.down = [event.x, event.y, this.ux, this.uy];
-            }
-        });
-        window.addEventListener("mousemove", event => {
-            if (this.down) {
-                const mx = Math.round((this.down[0] - event.x) / Math.pow(2, this._uScale));
-                const my = Math.round((this.down[1] - event.y) / Math.pow(2, this._uScale));
-                const ux = this._ux;
-                const uy = this._uy;
-                this._ux = this.down[2] + mx,
-                this._uy = this.down[3] + my;
-                if (ux !== this._ux || uy !== this._uy) {
-                    this.emitter.emit(CordType.Url, this._ux, this._uy, this._uScale);
-                }
-            }
-        });
-        window.addEventListener("mouseup", () => {
-            this.down = undefined;
-        });
-
-        // window.addEventListener("wheel" , event => {
-        //     const s = this._uScale;
-        //     if (event.deltaY > 0) {
-        //         this._uScale = s / 2;
-        //     } else {
-        //         this._uScale = s * 2;
-        //     }
-        // }, true);
     }
+
+    toggleHigherPrecision(value: boolean) {
+        if (this._highPrecision === value) {
+            return;
+        }
+        if (value) {
+            this.coordinatePredictor.enable();
+            window.removeEventListener("touchstart", this.touchStart);
+            window.removeEventListener("touchmove", this.touchMove);
+            window.removeEventListener("touchend", this.endMovement);
+            window.removeEventListener("mousedown", this.mouseDown);
+            window.removeEventListener("mousemove", this.mouseMove);
+            window.removeEventListener("mouseup", this.endMovement);
+        } else {
+            this.coordinatePredictor.disable();
+            window.addEventListener("touchstart", this.touchStart);
+            window.addEventListener("touchmove", this.touchMove);
+            window.addEventListener("touchend", this.endMovement);
+            window.addEventListener("mousedown", this.mouseDown);
+            window.addEventListener("mousemove", this.mouseMove);
+            window.addEventListener("mouseup", this.endMovement);
+        }
+        this.storage.toggleHighPrecision(value);
+        this._highPrecision = value;
+    }
+    get highPrecision() {
+        return this._highPrecision;
+    }
+
+    private touchStart = (event: TouchEvent) => {
+        if (event.target instanceof HTMLCanvasElement && event.touches.length === 1) {
+            this.down = [event.touches[0].clientX, event.touches[0].clientY, this.ux, this.uy];
+        }
+    };
+    private touchMove = (event: TouchEvent) => {
+        if (this.down && event.touches.length === 1) {
+            const mx = Math.round((this.down[0] - event.touches[0].clientX) / Math.pow(2, this._uScale));
+            const my = Math.round((this.down[1] - event.touches[0].clientY) / Math.pow(2, this._uScale));
+            const ux = this._ux;
+            const uy = this._uy;
+            this._ux = this.down[2] + mx,
+            this._uy = this.down[3] + my;
+            if (ux !== this._ux || uy !== this._uy) {
+                this.emitter.emit(CordType.Url, this._ux, this._uy, this._uScale);
+            }
+        }
+    };
+    private mouseDown = (event: MouseEvent) => {
+        if (event.target instanceof HTMLCanvasElement) {
+            this.down = [event.x, event.y, this.ux, this.uy];
+        }
+    };
+    private mouseMove = (event: MouseEvent) => {
+        if (this.down) {
+            const mx = Math.round((this.down[0] - event.x) / Math.pow(2, this._uScale));
+            const my = Math.round((this.down[1] - event.y) / Math.pow(2, this._uScale));
+            const ux = this._ux;
+            const uy = this._uy;
+            this._ux = this.down[2] + mx,
+            this._uy = this.down[3] + my;
+            if (ux !== this._ux || uy !== this._uy) {
+                this.emitter.emit(CordType.Url, this._ux, this._uy, this._uScale);
+            }
+        }
+    };
+    private endMovement = () => {
+        this.down = undefined;
+    };
 
     on(event: CordType, listener: Listener<[number, number, number]>) {
         this.emitter.on(event, listener);
@@ -105,6 +132,8 @@ export class Coordinates {
             }
             await waitForDraw();
         }
+        const value = await this.storage.enabledHighPrecision();
+        this.toggleHigherPrecision(value);
     }
 
     stop() {

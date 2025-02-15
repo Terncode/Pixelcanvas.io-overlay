@@ -1,4 +1,4 @@
-import { faCamera, faCaretDown, faCaretUp, faPieChart, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faCamera, faCaretDown, faCaretUp, faLocationCrosshairs, faPieChart, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 import styled from "styled-components";
@@ -83,6 +83,7 @@ interface Props {
 interface State {
     takingCanvasShot: boolean;
     canvasShotAvailable: boolean;
+    locationPrecision: boolean;
 }
 
 export class Menu extends React.Component<Props, State> {
@@ -92,6 +93,7 @@ export class Menu extends React.Component<Props, State> {
         this.state = {
             takingCanvasShot: false,
             canvasShotAvailable: true,
+            locationPrecision: props.cords.highPrecision
         };
     }
 
@@ -116,10 +118,14 @@ export class Menu extends React.Component<Props, State> {
             Popup.alert(error.name);
         }
     };
-
     inputElement = (event: React.FormEvent<HTMLInputElement>) => {
         const percentage = parseInt((event.target as HTMLInputElement).value);
         this.props.onOpacityChange(percentage);
+    };
+    togglePrecision = () => {
+        const value = !this.state.locationPrecision;
+        this.setState({ locationPrecision: value });
+        this.props.cords.toggleHigherPrecision(value);
     };
     screenshot = async () => {
         if (this.props.cords.uScale < 0) {
@@ -148,6 +154,14 @@ export class Menu extends React.Component<Props, State> {
                 onClick={() => this.props.showChart()}
                 title="Pixels graph">
                     <FontAwesomeIcon icon={ faPieChart } />
+            </Btn>
+            <Btn
+                title="Runtime coordinate calculator. Uses more resources"
+                onClick={this.togglePrecision} 
+                style={{
+                    border: this.state.locationPrecision ? "" : "2px dotted black"
+                }}>
+                <FontAwesomeIcon icon={ faLocationCrosshairs } />
             </Btn>
                 <InputRange type="range" min={0} max={100} value={this.props.opacity} onInput={this.inputElement} />
                 <PercentageDiv>{this.props.opacity}%</PercentageDiv>

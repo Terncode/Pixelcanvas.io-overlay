@@ -38,10 +38,10 @@ export interface PixelLogEx extends PixelLog {
 }
 
 export class Store implements LoadUnload {
+    private readonly STORAGE_KEY_HIGH_PRECISION = "_high-precision";
     private readonly STORAGE_KEY_MURAL = "_murals";
     private readonly STORAGE_KEY_SELECTED = "_mural";
     private readonly STORAGE_KEY_LOG_STORE = "records";
-    private readonly STORAGE_KEY_PIXEL_LOG = "_pixel-log";
     private _murals: MuralEx[] = [];
     private _selected?: MuralEx;
     private emitter = new BasicEventEmitter();
@@ -289,6 +289,13 @@ export class Store implements LoadUnload {
             this._phantomOverlay = -1;
             this.emit(StoreEvents.MuralPhantomOverlay);
         }
+    }
+
+    async enabledHighPrecision() {
+        return (await this.storage.getItem<boolean>(this.STORAGE_KEY_HIGH_PRECISION)) ?? false;
+    }
+    toggleHighPrecision(value: boolean) {
+        return this.storage.setItem(this.STORAGE_KEY_HIGH_PRECISION, value);
     }
     get murals() {
         return this._murals;

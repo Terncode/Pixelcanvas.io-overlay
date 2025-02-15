@@ -46,6 +46,7 @@ export class Overlay extends React.Component<Props, State> {
 
         this.ref.current!.style.top = this.ref.current!.style.left = `0px`;
         this.props.cords.on(CordType.Url, this.draw);
+        this.props.cords.on(CordType.UrlPredict, this.draw);
         this.props.cords.on(CordType.Div, this.updateIfMouseDown);
         window.addEventListener("mousemove", this.onMouseMove);
         window.addEventListener("touchmove", this.onTouchMove);
@@ -60,6 +61,7 @@ export class Overlay extends React.Component<Props, State> {
     }
     componentWillUnmount() {
         this.props.cords.off(CordType.Url, this.draw);
+        this.props.cords.off(CordType.UrlPredict, this.draw);
         this.props.cords.off(CordType.Div, this.updateIfMouseDown);
         window.removeEventListener("mousemove", this.onMouseMove);
         window.removeEventListener("touchmove", this.onTouchMove);
